@@ -4,7 +4,7 @@ import json
 import re
 import unicodedata
 from calendar import monthrange
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +16,7 @@ STORE_GID = "979789790"
 AD_GID = "1711647547"
 RAW_GID = "1292217820"
 USD_TO_RMB = 6.9
+BEIJING_TZ = timezone(timedelta(hours=8))
 
 REPORT_DIR = Path(__file__).resolve().parent
 DATA_DIR = REPORT_DIR / "data"
@@ -470,7 +471,7 @@ def build_payload(store_csv: Path, ad_csv: Path, raw_csv: Path) -> dict[str, Any
     meta_ad_spend = float(meta_daily.loc[meta_daily["product_key"].isin(ad_keys), "meta_spend"].sum())
 
     return {
-        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "generated_at": f"{datetime.now(BEIJING_TZ):%Y-%m-%d %H:%M:%S}（北京时间）",
         "sheet_id": SHEET_ID,
         "store_gid": STORE_GID,
         "ad_gid": AD_GID,
