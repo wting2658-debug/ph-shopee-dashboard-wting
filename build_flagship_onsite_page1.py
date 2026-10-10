@@ -15,7 +15,7 @@ SHEET_ID = "1I_Q-Rx6QklML2023EUG8U1hb4MPN8shyeTyShiXrcYY"
 STORE_GID = "979789790"
 AD_GID = "1711647547"
 RAW_GID = "1292217820"
-USD_TO_RMB = 6.9
+USD_TO_RMB = 6.8
 BEIJING_TZ = timezone(timedelta(hours=8))
 
 REPORT_DIR = Path(__file__).resolve().parent
@@ -1122,7 +1122,7 @@ def render_html(payload: dict[str, Any]) -> str:
 
     .metric-group-grid {
       display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-columns: repeat(var(--metric-columns, 7), minmax(0, 1fr));
       gap: 10px;
     }
 
@@ -1476,9 +1476,7 @@ def render_html(payload: dict[str, Any]) -> str:
     }
 
     .share-table th:nth-child(8),
-    .share-table td:nth-child(8),
-    .share-table th:nth-child(11),
-    .share-table td:nth-child(11) {
+    .share-table td:nth-child(8) {
       border-left: 1px dashed #9eb1c7;
     }
 
@@ -1816,7 +1814,7 @@ def render_html(payload: dict[str, Any]) -> str:
         <div class="panel-head">
           <div>
             <h2 class="panel-title">总览趋势 · 站外广告</h2>
-            <div class="panel-subtitle">Meta 金额已统一按 6.9 换算人民币，关注曝光到点击的获客效率。</div>
+            <div class="panel-subtitle">Meta 金额已统一按 6.8 换算人民币，关注曝光到点击的获客效率。</div>
           </div>
         </div>
         <div class="trend-column">
@@ -1896,9 +1894,9 @@ def render_html(payload: dict[str, Any]) -> str:
       指标口径：
       店铺客单价 = 店铺 GMV / 订单数，CTR = 产品点击 / 产品访客，CVR = 订单数 / 产品点击；
       站内 ROAS = Ads GMV / Ads Spend，客单价 = Ads GMV / Order，CPC = Ads Spend / Clicks，CVR = Order / Clicks；
-      Meta ROAS = 购物转化价值 / 花费，客单价 = 购物转化价值 / 购物次数，CPM = 花费 × 1000 / 展示次数，CTR = 链接点击量 / 展示次数；
+      Meta ROAS = 购物转化价值 / 花费，客单价 = 购物转化价值 / 购物次数，CPM = 花费 × 1000 / 展示次数，CTR = 链接点击量 / 展示次数，CVR = 购物次数 / 链接点击量；
       总花费 = 站内广告花费 + Meta 广告花费。
-      Raw_data 的花费金额与购物转化价值在进入任何汇总前均按 6.9 换算为人民币。
+      Raw_data 的花费金额与购物转化价值在进入任何汇总前均按 6.8 换算为人民币。
     </section>
     </main>
 
@@ -1966,7 +1964,7 @@ def render_html(payload: dict[str, Any]) -> str:
       </section>
 
       <section class="formula-note">
-        站外投放口径：花费及购物转化价值先按 6.9 换算人民币；店铺 GMV 来自“旗舰店数据源”的 GMV-￥；ROI = 购物转化价值 / 花费，CPM = 花费 × 1000 / 展示，CTR = 链接点击 / 展示，CVR = 购物次数 / 链接点击，CPA = 花费 / 购物次数；
+        站外投放口径：花费及购物转化价值先按 6.8 换算人民币；店铺 GMV 来自“旗舰店数据源”的 GMV-￥；ROI = 购物转化价值 / 花费，CPM = 花费 × 1000 / 展示，CTR = 链接点击 / 展示，CVR = 购物次数 / 链接点击，CPA = 花费 / 购物次数；
         再营销占比与拉新占比均按对应人群花费 / 站外总花费计算。
       </section>
     </main>
@@ -2080,19 +2078,23 @@ def render_html(payload: dict[str, Any]) -> str:
       storeCTR: { label: '店铺 CTR', kind: 'percent' },
       conversion: { label: '店铺 CVR', kind: 'percent' },
       adSpend: { label: '站内广告花费', kind: 'currency' },
+      adGMV: { label: '站内广告 GMV', kind: 'currency' },
       adROI: { label: '站内广告 ROAS', kind: 'ratio' },
       adAOV: { label: '站内广告客单价', kind: 'currency' },
       adCPC: { label: '站内广告 CPC', kind: 'decimal2' },
       adImpressions: { label: '站内广告曝光', kind: 'number' },
       adClicks: { label: '站内广告点击', kind: 'number' },
+      adCTR: { label: '站内广告 CTR', kind: 'percent' },
       adCVR: { label: '站内广告 CVR', kind: 'percent' },
       metaSpend: { label: 'Meta 广告花费', kind: 'currency' },
+      metaGMV: { label: 'Meta 广告 GMV', kind: 'currency' },
       metaROAS: { label: 'Meta 广告 ROAS', kind: 'ratio' },
       metaAOV: { label: 'Meta 广告客单价', kind: 'currency' },
       metaCPM: { label: 'Meta 广告 CPM', kind: 'decimal2' },
       metaImpressions: { label: 'Meta 广告曝光', kind: 'number' },
       metaClicks: { label: 'Meta 链接点击', kind: 'number' },
       metaCTR: { label: 'Meta 广告 CTR', kind: 'percent' },
+      metaCVR: { label: 'Meta 广告 CVR', kind: 'percent' },
     };
 
     const products = PAYLOAD.products;
@@ -2531,12 +2533,16 @@ def render_html(payload: dict[str, Any]) -> str:
         adImpressionsCompare: [],
         adClicksCurrent: [],
         adClicksCompare: [],
+        adCTRCurrent: [],
+        adCTRCompare: [],
         adCPCCurrent: [],
         adCPCCompare: [],
         adCVRCurrent: [],
         adCVRCompare: [],
         metaSpendCurrent: [],
         metaSpendCompare: [],
+        metaGMVCurrent: [],
+        metaGMVCompare: [],
         metaROASCurrent: [],
         metaROASCompare: [],
         metaAOVCurrent: [],
@@ -2549,6 +2555,8 @@ def render_html(payload: dict[str, Any]) -> str:
         metaClicksCompare: [],
         metaCTRCurrent: [],
         metaCTRCompare: [],
+        metaCVRCurrent: [],
+        metaCVRCompare: [],
       };
 
       for (let index = 0; index < length; index += 1) {
@@ -2583,12 +2591,16 @@ def render_html(payload: dict[str, Any]) -> str:
         result.adImpressionsCompare.push(compareDate ? compareAgg.impressions : null);
         result.adClicksCurrent.push(currentDate ? currentAgg.adClicks : null);
         result.adClicksCompare.push(compareDate ? compareAgg.adClicks : null);
+        result.adCTRCurrent.push(currentDate ? currentAgg.adCTR : null);
+        result.adCTRCompare.push(compareDate ? compareAgg.adCTR : null);
         result.adCPCCurrent.push(currentDate ? currentAgg.cpc : null);
         result.adCPCCompare.push(compareDate ? compareAgg.cpc : null);
         result.adCVRCurrent.push(currentDate ? currentAgg.adCVR : null);
         result.adCVRCompare.push(compareDate ? compareAgg.adCVR : null);
         result.metaSpendCurrent.push(currentDate ? currentAgg.metaSpend : null);
         result.metaSpendCompare.push(compareDate ? compareAgg.metaSpend : null);
+        result.metaGMVCurrent.push(currentDate ? currentAgg.metaGMV : null);
+        result.metaGMVCompare.push(compareDate ? compareAgg.metaGMV : null);
         result.metaROASCurrent.push(currentDate ? currentAgg.metaROAS : null);
         result.metaROASCompare.push(compareDate ? compareAgg.metaROAS : null);
         result.metaAOVCurrent.push(currentDate ? currentAgg.metaAverageOrderValue : null);
@@ -2601,6 +2613,8 @@ def render_html(payload: dict[str, Any]) -> str:
         result.metaClicksCompare.push(compareDate ? compareAgg.metaClicks : null);
         result.metaCTRCurrent.push(currentDate ? currentAgg.metaCTR : null);
         result.metaCTRCompare.push(compareDate ? compareAgg.metaCTR : null);
+        result.metaCVRCurrent.push(currentDate ? currentAgg.metaCVR : null);
+        result.metaCVRCompare.push(compareDate ? compareAgg.metaCVR : null);
       }
 
       return result;
@@ -2624,11 +2638,13 @@ def render_html(payload: dict[str, Any]) -> str:
           title: '站内广告',
           items: [
             { key: 'adSpend', label: '广告花费', value: formatCurrency(current.adSpend), current: current.adSpend, compare: compare.adSpend, dash: current.adSpend === 0 },
+            { key: 'adGMV', label: '广告 GMV', value: formatCurrency(current.adGMV), current: current.adGMV, compare: compare.adGMV, dash: current.adSpend === 0 },
             { key: 'adROI', label: 'ROAS', value: formatRatio(current.adROI), current: current.adROI, compare: compare.adROI, dash: current.adSpend === 0 },
             { key: 'adAOV', label: '客单价', value: formatCurrency(current.adAverageOrderValue), current: current.adAverageOrderValue, compare: compare.adAverageOrderValue, dash: current.adSpend === 0 },
             { key: 'adCPC', label: 'CPC', value: formatNumber(current.cpc, 2), current: current.cpc, compare: compare.cpc, dash: current.adSpend === 0 },
             { key: 'adImpressions', label: '曝光', value: formatNumber(current.impressions), current: current.impressions, compare: compare.impressions, dash: current.adSpend === 0 },
             { key: 'adClicks', label: '点击', value: formatNumber(current.adClicks), current: current.adClicks, compare: compare.adClicks, dash: current.adSpend === 0 },
+            { key: 'adCTR', label: 'CTR', value: formatPercent(current.adCTR, 2), current: current.adCTR, compare: compare.adCTR, dash: current.adSpend === 0 },
             { key: 'adCVR', label: 'CVR', value: formatPercent(current.adCVR, 2), current: current.adCVR, compare: compare.adCVR, dash: current.adSpend === 0 },
           ],
         },
@@ -2636,19 +2652,21 @@ def render_html(payload: dict[str, Any]) -> str:
           title: 'Meta 广告',
           items: [
             { key: 'metaSpend', label: '广告花费', value: formatCurrency(current.metaSpend), current: current.metaSpend, compare: compare.metaSpend, dash: current.metaSpend === 0 },
+            { key: 'metaGMV', label: '广告 GMV', value: formatCurrency(current.metaGMV), current: current.metaGMV, compare: compare.metaGMV, dash: current.metaSpend === 0 },
             { key: 'metaROAS', label: 'ROAS', value: formatRatio(current.metaROAS), current: current.metaROAS, compare: compare.metaROAS, dash: current.metaSpend === 0 },
             { key: 'metaAOV', label: '客单价', value: formatCurrency(current.metaAverageOrderValue), current: current.metaAverageOrderValue, compare: compare.metaAverageOrderValue, dash: current.metaSpend === 0 },
             { key: 'metaCPM', label: 'CPM', value: formatNumber(current.metaCPM, 2), current: current.metaCPM, compare: compare.metaCPM, dash: current.metaSpend === 0 },
             { key: 'metaImpressions', label: '曝光', value: formatNumber(current.metaImpressions), current: current.metaImpressions, compare: compare.metaImpressions, dash: current.metaSpend === 0 },
             { key: 'metaClicks', label: '链接点击', value: formatNumber(current.metaClicks), current: current.metaClicks, compare: compare.metaClicks, dash: current.metaSpend === 0 },
             { key: 'metaCTR', label: 'CTR', value: formatPercent(current.metaCTR, 2), current: current.metaCTR, compare: compare.metaCTR, dash: current.metaSpend === 0 },
+            { key: 'metaCVR', label: 'CVR', value: formatPercent(current.metaCVR, 2), current: current.metaCVR, compare: compare.metaCVR, dash: current.metaSpend === 0 },
           ],
         },
       ];
       document.getElementById('metrics-grid').innerHTML = groups.map(group => `
         <div class="metric-group">
           <div class="metric-group-title">${group.title}</div>
-          <div class="metric-group-grid">
+          <div class="metric-group-grid" style="--metric-columns: ${group.items.length}">
             ${group.items.map(item => `
               <div class="metric-card overview-selectable ${state.overviewMetrics.has(item.key) ? 'overview-active' : ''}" data-overview-metric="${item.key}" title="点击选择/取消下方折线指标，可多选">
                 <div class="metric-label">${item.label}</div>
