@@ -3,6 +3,7 @@ name: Refresh dashboard data
 on:
   schedule:
     - cron: "50 2 * * *"
+    - cron: "20 3 * * *"
   workflow_dispatch:
 
 permissions:
