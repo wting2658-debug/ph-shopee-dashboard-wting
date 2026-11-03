@@ -29,7 +29,7 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+        run: python -m pip install -r scripts/requirements.txt
 
       - name: Download latest Google Sheet data
         run: python scripts/download_sheet_data.py
