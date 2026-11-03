@@ -6,6 +6,7 @@ from urllib.request import Request, urlopen
 
 
 SHEET_ID = "1I_Q-Rx6QklML2023EUG8U1hb4MPN8shyeTyShiXrcYY"
+SHIPMENT_SHEET_ID = "1dwWGTlSeO9cL8NsYQBu3JUmB-H7t02pK16gSIpetl2Y"
 REPORT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = REPORT_DIR / "data"
 SOURCES = [
@@ -13,12 +14,13 @@ SOURCES = [
     ("站内广告", "1711647547", "onsite_ads_sheet_1711647547.csv", "date,产品ID"),
     ("Raw_data", "1292217820", "raw_data_sheet_1292217820.csv", "广告名称,广告组名称"),
 ]
+SHIPMENT_SOURCE = ("出货数据源", "374772985", "shipment_raw.csv", "SKU,产品名")
 
 
-def download_source(name: str, gid: str, filename: str, header_prefix: str) -> None:
+def download_source(name: str, gid: str, filename: str, header_prefix: str, sheet_id: str = SHEET_ID) -> None:
     destination = DATA_DIR / filename
     temporary = destination.with_suffix(f"{destination.suffix}.tmp")
-    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={gid}"
+    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
     request = Request(url, headers={"User-Agent": "PH-Shopee-Dashboard-Refresh/1.0"})
 
     with urlopen(request, timeout=300) as response, temporary.open("wb") as output:
@@ -40,6 +42,8 @@ def main() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     for source in SOURCES:
         download_source(*source)
+    # Download shipment data from separate sheet
+    download_source(*SHIPMENT_SOURCE, sheet_id=SHIPMENT_SHEET_ID)
 
 
 if __name__ == "__main__":
