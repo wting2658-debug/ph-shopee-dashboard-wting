@@ -1,5 +1,5 @@
-const OWNER = "rishisann1999-coder";
-const REPOSITORY = "PH-shopee-dashboard";
+const OWNER = "wting2658-debug";
+const REPOSITORY = "ph-shopee-dashboard-wting";
 const WORKFLOW = "refresh-dashboard.yml";
 const BRANCH = "main";
 const GITHUB_API = "https://api.github.com";

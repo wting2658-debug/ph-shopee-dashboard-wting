@@ -9,8 +9,8 @@
 ## 启用线上“立即更新”
 
 1. 在 GitHub 创建 Fine-grained personal access token。
-2. Resource owner 选择 `rishisann1999-coder`。
-3. Repository access 只选择 `PH-shopee-dashboard`。
+2. Resource owner 选择 `wting2658-debug`。
+3. Repository access 只选择 `ph-shopee-dashboard-wting`。
 4. Repository permissions 将 `Actions` 设置为 `Read and write`。
 5. 在 Cloudflare Pages 项目打开 `Settings` → `Variables and Secrets`。
 6. 为 Production 添加加密变量 `GITHUB_ACTIONS_TOKEN`，值为上一步的 Token。
