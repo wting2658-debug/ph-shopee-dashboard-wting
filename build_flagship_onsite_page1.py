@@ -623,7 +623,7 @@ def render_html(payload: dict[str, Any]) -> str:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SKT-PH-Meta x Shopee 看板 · 店铺分析</title>
+  <title>PH-SKT 货架看板 · 店铺分析</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -1724,7 +1724,7 @@ def render_html(payload: dict[str, Any]) -> str:
   <div class="page">
     <section class="hero">
       <div class="hero-kicker">Store · Shopee Ads · Meta Ads</div>
-      <h1 class="dashboard-title">SKT-PH-Meta x Shopee 看板</h1>
+      <h1 class="dashboard-title">PH-SKT 货架看板</h1>
       <p class="dashboard-subtitle">
         统一查看旗舰店、Shopee 站内广告与 Meta 站外广告，围绕流量、转化和投放费比定位 GMV 增长卡点。
         数据源每日更新，可通过“立即更新”重新导出并生成最新看板。
