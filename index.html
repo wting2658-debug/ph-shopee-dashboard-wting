@@ -99,11 +99,35 @@
       line-height: 1.75;
     }
 
-    .dashboard-controls {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto minmax(210px, 0.42fr);
-      align-items: stretch;
+    /* 标题行：左侧标题，右侧「立即更新」按钮 + 状态 */
+    .hero-headline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .hero-headline-left {
+      min-width: 0;
+      flex: 1 1 320px;
+    }
+
+    .hero-refresh {
+      display: flex;
+      align-items: center;
       gap: 12px;
+      flex: 0 0 auto;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.96);
+      border: 1px solid #d8e2ee;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(52, 77, 109, 0.06);
+    }
+
+    .dashboard-controls {
+      display: block;
+      margin-top: 16px;
       padding: 14px;
       background: rgba(255,255,255,0.96);
       border: 1px solid #d8e2ee;
@@ -118,10 +142,10 @@
 
     .refresh-button {
       align-self: center;
-      min-height: 44px;
+      min-height: 40px;
       border: 0;
       border-radius: 8px;
-      padding: 0 18px;
+      padding: 0 20px;
       color: #fff;
       background: #16748d;
       font-weight: 800;
@@ -136,7 +160,7 @@
       display: grid;
       align-content: center;
       gap: 6px;
-      padding: 8px 14px;
+      padding: 6px 14px;
       border: 1px solid #d8e2ee;
       border-radius: 10px;
       background: #f8fbfe;
@@ -165,22 +189,24 @@
 
     .dashboard-tabs {
       display: flex;
-      gap: 2px;
+      gap: 8px;
       width: max-content;
       max-width: 100%;
-      margin-top: 14px;
-      padding: 4px;
+      margin-top: 22px;
+      padding: 5px;
       border: 1px solid #d8e2ee;
-      border-radius: 15px;
+      border-radius: 17px;
       background: rgba(255,255,255,0.92);
+      box-shadow: 0 8px 24px rgba(52, 77, 109, 0.06);
     }
 
     .dashboard-tab {
       border: 0;
-      border-radius: 10px;
-      padding: 11px 24px;
+      border-radius: 12px;
+      padding: 14px 34px;
       color: #44617f;
       background: transparent;
+      font-size: 16px;
       font-weight: 800;
     }
 
@@ -1085,11 +1111,15 @@
       .filters-strip,
       .metric-group-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .hero { padding: 18px; }
-      .dashboard-controls { grid-template-columns: 1fr; }
+      .hero-headline { flex-direction: column; gap: 14px; }
+      .hero-refresh { width: 100%; }
       .dashboard-controls .date-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      .dashboard-tabs { width: 100%; }
+      .dashboard-tab { flex: 1 1 0; padding: 12px 12px; font-size: 15px; }
       .filters-strip.meta-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .onsite-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .refresh-button { width: 100%; }
+      .hero-refresh { flex-wrap: wrap; }
+      .refresh-button { flex: 1 1 auto; }
       .panel { padding: 16px; }
       .filter-panel { position: static; margin-top: 10px; }
       th, td { padding: 8px 4px; font-size: 10px; }
@@ -1104,11 +1134,27 @@
   <div class="page">
     <section class="hero">
       <div class="hero-kicker">Store · Shopee Ads · Meta Ads</div>
-      <h1 class="dashboard-title">PH-SKT 货架看板</h1>
-      <p class="dashboard-subtitle">
-        统一查看旗舰店、Shopee 站内广告与 Meta 站外广告，围绕流量、转化和投放费比定位 GMV 增长卡点。
-        数据源每日更新，可通过“立即更新”重新导出并生成最新看板。
-      </p>
+      <div class="hero-headline">
+        <div class="hero-headline-left">
+          <h1 class="dashboard-title">PH-SKT 货架看板</h1>
+          <p class="dashboard-subtitle">
+            统一查看旗舰店、Shopee 站内广告与 Meta 站外广告，围绕流量、转化和投放费比定位 GMV 增长卡点。
+            数据源每日更新，可通过“立即更新”重新导出并生成最新看板。
+          </p>
+        </div>
+        <div class="hero-refresh">
+          <button class="refresh-button" id="refresh-data-btn" type="button">立即更新</button>
+          <div class="refresh-status">
+            <div class="refresh-state" id="refresh-state">数据正常</div>
+            <div id="last-updated">最新更新：--</div>
+          </div>
+        </div>
+      </div>
+      <div class="dashboard-tabs" aria-label="看板分页">
+        <button class="dashboard-tab active" type="button" data-dashboard-page="store">店铺分析</button>
+        <button class="dashboard-tab" type="button" data-dashboard-page="meta">站外投放</button>
+        <button class="dashboard-tab" type="button" data-dashboard-page="onsite">站内投放</button>
+      </div>
       <div class="dashboard-controls">
         <div class="date-grid">
           <div class="field">
@@ -1128,16 +1174,6 @@
             <input id="compare-end-date" type="date">
           </div>
         </div>
-        <button class="refresh-button" id="refresh-data-btn" type="button">立即更新</button>
-        <div class="refresh-status">
-          <div class="refresh-state" id="refresh-state">数据正常</div>
-          <div id="last-updated">最新更新：--</div>
-        </div>
-      </div>
-      <div class="dashboard-tabs" aria-label="看板分页">
-        <button class="dashboard-tab active" type="button" data-dashboard-page="store">店铺分析</button>
-        <button class="dashboard-tab" type="button" data-dashboard-page="meta">站外投放</button>
-        <button class="dashboard-tab" type="button" data-dashboard-page="onsite">站内投放</button>
       </div>
     </section>
 
