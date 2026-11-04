@@ -322,7 +322,7 @@ JS = """
       shipmentChart('chart-shipment-trend', 'line', rows.map(r => r.month), [['TT','#ee4d2d'],['虾皮','#2787e7'],['Lazada','#f5a623']].map(([label,color],i) => ({ label, data: rows.map(r => r.values[i]), borderColor: color, backgroundColor: color, borderWidth: 2.5, tension: .25, pointRadius: 4, pointHoverRadius: 7, pointHitRadius: 12, fill: false })));
       const headers = ['月份','总出货','TT出货量','虾皮出货量','Lazada出货量'];
       const head = '<thead><tr>' + headers.map((h,i) => `<th${i === 0 ? ' class="shipment-text"' : ''}>${h}</th>`).join('') + '</tr></thead>';
-      const body = rows.map(r => {
+      const body = [...rows].reverse().map(r => {
         const [year,month] = r.month.split('-').map(Number);
         const lastDate = r.month + '-' + String(new Date(Date.UTC(year,month,0)).getUTCDate()).padStart(2,'0');
         const partial = latest && r.month === latest.slice(0,7) && latest < lastDate;
