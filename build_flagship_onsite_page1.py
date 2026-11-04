@@ -616,6 +616,36 @@ def build_payload(store_csv: Path, ad_csv: Path, raw_csv: Path) -> dict[str, Any
     }
 
 
+SHIPMENT_JSON_PATH = REPORT_DIR / "shipment_data.json"
+
+
+def load_shipment_json() -> str:
+    """Return the shipment dataset as a compact JSON literal.
+
+    Falls back to an empty dataset so the build never breaks when the
+    shipment source is unavailable.
+    """
+    if SHIPMENT_JSON_PATH.exists():
+        raw = SHIPMENT_JSON_PATH.read_text(encoding="utf-8").strip()
+        if raw:
+            return raw
+    return json.dumps(
+        {
+            "channel_cards": {"current_ym": "", "prev_ym": "", "cards": []},
+            "category_table": [],
+            "monthly_trend": [],
+            "daily_trend": {"tiktok": [], "shopee": [], "lazada": []},
+            "product_rows": [],
+            "all_skus": [],
+            "current_ym": "",
+            "prev_ym": "",
+            "all_yms": [],
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+
 def render_html(payload: dict[str, Any]) -> str:
     payload_json = json.dumps(payload, ensure_ascii=False)
     html = r"""<!DOCTYPE html>
@@ -1748,6 +1778,11 @@ def render_html(payload: dict[str, Any]) -> str:
       th:not(:first-child), td:not(:first-child) { width: 7.45%; }
     }
 
+
+
+
+
+
     /* ===== Shipment Page ===== */
     .shipment-metrics-grid {
       display: grid;
@@ -1761,6 +1796,12 @@ def render_html(payload: dict[str, Any]) -> str:
       box-shadow: var(--shadow);
       border-radius: var(--radius-xl);
       padding: 18px 20px;
+      transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+    }
+    .shipment-metric-card.is-dimmed { opacity: .38; }
+    .shipment-metric-card.is-active {
+      border-color: #2787e7;
+      box-shadow: 0 0 0 2px rgba(39,135,231,.18), var(--shadow);
     }
     .shipment-metric-label {
       font-size: 13px;
@@ -1795,52 +1836,155 @@ def render_html(payload: dict[str, Any]) -> str:
     }
     .shipment-table th,
     .shipment-table td {
-      padding: 10px 12px;
+      padding: 9px 10px;
       text-align: right;
       border-bottom: 1px solid var(--line);
+      white-space: nowrap;
     }
     .shipment-table th {
+      font-size: 12px;
       font-weight: 700;
-      color: #44617f;
-      background: rgba(248,250,252,0.8);
-      font-size: 13px;
-      white-space: nowrap;
+      color: #6b5f54;
+      background: rgba(61,42,17,.03);
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
     .shipment-table td:first-child,
     .shipment-table th:first-child {
       text-align: left;
+      position: sticky;
+      left: 0;
+      background: var(--paper);
+      z-index: 2;
     }
-    .shipment-table tbody tr:hover {
-      background: rgba(238,77,45,0.03);
+    .shipment-table th:first-child { background: rgba(61,42,17,.03); z-index: 3; }
+    .shipment-table tbody tr:hover { background: rgba(39,135,231,.06); }
+    .shipment-cat-btn {
+      border: 1px solid rgba(39,135,231,.35);
+      background: rgba(39,135,231,.08);
+      color: #1f6fc4;
+      border-radius: 999px;
+      padding: 3px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .16s ease, color .16s ease, border-color .16s ease;
     }
+    .shipment-cat-btn:hover { background: rgba(39,135,231,.2); }
+    .shipment-cat-btn.is-active {
+      background: #2787e7;
+      border-color: #2787e7;
+      color: #fff;
+    }
+    .shipment-chip-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .shipment-filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(39,135,231,.35);
+      background: rgba(39,135,231,.1);
+      color: #1f6fc4;
+      border-radius: 999px;
+      padding: 5px 8px 5px 14px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .shipment-filter-chip button {
+      border: none;
+      background: rgba(31,111,196,.16);
+      color: inherit;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .shipment-filter-chip button:hover { background: #2787e7; color: #fff; }
+    .shipment-filter-hint { font-size: 12px; color: var(--muted); }
     .shipment-chart-wrap {
       position: relative;
       height: 340px;
     }
-    .shipment-dual-chart {
+    .shipment-tri-chart {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 18px;
     }
-    .shipment-dual-chart .panel {
+    .shipment-tri-chart .panel {
       padding: 16px;
     }
-    .shipment-dual-chart .chart-wrap-inner {
+    .shipment-tri-chart .chart-wrap-inner {
       position: relative;
-      height: 280px;
+      height: 260px;
+    }
+    .shipment-dim-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px;
+      background: rgba(61,42,17,.05);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+    }
+    .shipment-dim-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--line);
+    }
+    .shipment-dim-row[hidden] { display: none; }
+    .shipment-dim-row-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #44617f;
+      white-space: nowrap;
+    }
+    .shipment-dim-switch button {
+      border: none;
+      background: transparent;
+      color: #6b5f54;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      padding: 6px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background .16s ease, color .16s ease;
+    }
+    .shipment-dim-switch button:hover { color: #1f6fc4; }
+    .shipment-dim-switch button.is-active {
+      background: #2787e7;
+      color: #fff;
+      box-shadow: 0 1px 4px rgba(39,135,231,.35);
     }
     .shipment-sku-filter {
       display: flex;
       align-items: center;
       gap: 10px;
       margin-bottom: 12px;
+      flex-wrap: wrap;
     }
     .shipment-sku-filter input {
       padding: 8px 12px;
       border: 1px solid var(--line);
       border-radius: 8px;
       font-size: 14px;
-      width: 220px;
+      width: 240px;
     }
     .shipment-sku-filter label {
       font-size: 13px;
@@ -1848,11 +1992,31 @@ def render_html(payload: dict[str, Any]) -> str:
       color: #44617f;
       white-space: nowrap;
     }
+    .shipment-product-btn {
+      border: none;
+      background: transparent;
+      color: #2787e7;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 6px;
+      text-align: left;
+    }
+    .shipment-product-btn:hover { background: rgba(39,135,231,.12); }
+    .shipment-product-btn.is-active { background: #2787e7; color: #fff; }
+    @media (max-width: 1180px) {
+      .shipment-tri-chart { grid-template-columns: 1fr; }
+    }
     @media (max-width: 860px) {
       .shipment-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .shipment-dual-chart { grid-template-columns: 1fr; }
     }
 
+  </style>
+  </style>
+  </style>
+  </style>
   </style>
 </head>
 <body>
@@ -1899,6 +2063,14 @@ def render_html(payload: dict[str, Any]) -> str:
           <div class="field">
             <label for="compare-end-date">对比结束</label>
             <input id="compare-end-date" type="date">
+          </div>
+        </div>
+        <div class="shipment-dim-row" id="shipment-dim-row" hidden>
+          <span class="shipment-dim-row-label">明细维度</span>
+          <div class="shipment-dim-switch" id="shipment-dim-switch-top" role="group" aria-label="明细维度">
+            <button type="button" data-dim="sku" class="is-active">SKU货号</button>
+            <button type="button" data-dim="category">品类</button>
+            <button type="button" data-dim="name">产品名</button>
           </div>
         </div>
       </div>
@@ -2180,6 +2352,7 @@ def render_html(payload: dict[str, Any]) -> str:
             <div class="panel-subtitle" id="shipment-period-label"></div>
           </div>
         </div>
+        <div class="shipment-chip-row" id="shipment-filter-row"></div>
         <div class="shipment-metrics-grid" id="shipment-metrics-grid"></div>
       </section>
 
@@ -2187,7 +2360,7 @@ def render_html(payload: dict[str, Any]) -> str:
         <div class="panel-head">
           <div>
             <h2 class="panel-title">DMS · 品类出货量</h2>
-            <div class="panel-subtitle">各品类出货总量及分平台明细，含环比变化。</div>
+            <div class="panel-subtitle">各品类出货总量及分平台明细，含环比变化。点击品类可联动整页筛选。</div>
           </div>
         </div>
         <div class="table-wrap meta-table-scroll">
@@ -2198,28 +2371,22 @@ def render_html(payload: dict[str, Any]) -> str:
       <section class="panel" style="margin-top: 18px;">
         <div class="panel-head">
           <div>
-            <h2 class="panel-title">TT销量 &amp; 货架出货趋势</h2>
-            <div class="panel-subtitle">Tiktok 与 Shopee 月度出货量趋势对比。</div>
+            <h2 class="panel-title">日趋势 · TT / 虾皮 / Lazada</h2>
+            <div class="panel-subtitle">当月每日分渠道出货量趋势。</div>
           </div>
         </div>
-        <div class="shipment-chart-wrap"><canvas id="chart-shipment-trend"></canvas></div>
-      </section>
-
-      <section class="panel" style="margin-top: 18px;">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">日趋势 · 货架销量 / TT销量</h2>
-            <div class="panel-subtitle">当月每日分平台出货量趋势。</div>
-          </div>
-        </div>
-        <div class="shipment-dual-chart">
+        <div class="shipment-tri-chart">
           <div class="panel">
-            <h3 style="font-size:16px;margin-bottom:10px;color:#44617f;">货架销量日趋势</h3>
+            <h3 style="font-size:16px;margin-bottom:10px;color:#ee4d2d;">TT销量日趋势</h3>
+            <div class="chart-wrap-inner"><canvas id="chart-shipment-daily-tiktok"></canvas></div>
+          </div>
+          <div class="panel">
+            <h3 style="font-size:16px;margin-bottom:10px;color:#2787e7;">虾皮销量日趋势</h3>
             <div class="chart-wrap-inner"><canvas id="chart-shipment-daily-shopee"></canvas></div>
           </div>
           <div class="panel">
-            <h3 style="font-size:16px;margin-bottom:10px;color:#44617f;">TT销量日趋势</h3>
-            <div class="chart-wrap-inner"><canvas id="chart-shipment-daily-tiktok"></canvas></div>
+            <h3 style="font-size:16px;margin-bottom:10px;color:#f5a623;">Lazada销量日趋势</h3>
+            <div class="chart-wrap-inner"><canvas id="chart-shipment-daily-lazada"></canvas></div>
           </div>
         </div>
       </section>
@@ -2227,28 +2394,38 @@ def render_html(payload: dict[str, Any]) -> str:
       <section class="panel table-panel" style="margin-top: 18px;">
         <div class="panel-head">
           <div>
-            <h2 class="panel-title">TT&amp;货架 · 月累计出货对比</h2>
-            <div class="panel-subtitle">当月Top50 SKU出货明细，含分平台量及环比。</div>
+            <h2 class="panel-title" id="shipment-detail-title">TT&amp;货架 · 月累计出货对比</h2>
+            <div class="panel-subtitle" id="shipment-detail-subtitle">当月产品出货明细，含分渠道量及环比。</div>
           </div>
         </div>
         <div class="shipment-sku-filter">
-          <label for="shipment-sku-search">筛选SKU</label>
-          <input id="shipment-sku-search" type="text" placeholder="输入SKU或产品名...">
+          <label for="shipment-sku-search">搜索</label>
+          <input id="shipment-sku-search" type="text" placeholder="输入SKU、品类或产品名...">
         </div>
         <div class="table-wrap meta-table-scroll">
           <table class="shipment-table" id="shipment-sku-table"></table>
         </div>
       </section>
 
+      <section class="panel" style="margin-top: 18px;">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">3渠道 · 月度出货趋势</h2>
+            <div class="panel-subtitle">Tiktok / 虾皮 Shopee / Lazada 月度出货量趋势对比。</div>
+          </div>
+        </div>
+        <div class="shipment-chart-wrap"><canvas id="chart-shipment-trend"></canvas></div>
+      </section>
+
       <section class="formula-note">
-        出货分析口径：数据来源于出货明细表，Platform 归一化为 Tiktok / Shopee / Lazada 三渠道；环比 = (当月 - 上月) / 上月 × 100%；当前月数据为月中实时累计，完整月数据需月末统计。
+        出货分析口径：数据来源于出货明细表，Platform 归一化为 Tiktok / Shopee / Lazada 三渠道；环比 = (当月 - 上月) / 上月 × 100%；当前月数据为月中实时累计，完整月数据需月末统计。点击品类可联动整页筛选，再次点击取消。
       </section>
     </main>
-  </div>
+
 
   <script>
     const PAYLOAD = __PAYLOAD_JSON__;
-    const SHIPMENT_DATA = {"channel_cards": {"current_ym": "2026-11", "prev_ym": "2026-10", "cards": [{"label": "总出货", "current": 9797, "prev": 176674, "delta": -94.5}, {"label": "Tiktok", "current": 4877, "prev": 100515, "delta": -95.1}, {"label": "Shopee", "current": 4535, "prev": 67599, "delta": -93.3}, {"label": "Lazada", "current": 385, "prev": 8560, "delta": -95.5}]}, "category_table": [{"category": "彩妆", "total": 3534, "share": 36.1, "delta": -95.0, "tiktok": 1643, "tiktok_share": 46.5, "tiktok_delta": -95.8, "shopee": 1770, "shopee_share": 50.1, "shopee_delta": -93.5, "lazada": 121, "lazada_share": 3.4, "lazada_delta": -96.6}, {"category": "面霜", "total": 2086, "share": 21.3, "delta": -93.8, "tiktok": 1084, "tiktok_share": 52.0, "tiktok_delta": -94.4, "shopee": 916, "shopee_share": 43.9, "shopee_delta": -92.8, "lazada": 86, "lazada_share": 4.1, "lazada_delta": -94.3}, {"category": "精华", "total": 1554, "share": 15.9, "delta": -93.8, "tiktok": 814, "tiktok_share": 52.4, "tiktok_delta": -94.5, "shopee": 651, "shopee_share": 41.9, "shopee_delta": -92.8, "lazada": 89, "lazada_share": 5.7, "lazada_delta": -92.6}, {"category": "面膜", "total": 835, "share": 8.5, "delta": -94.2, "tiktok": 401, "tiktok_share": 48.0, "tiktok_delta": -95.3, "shopee": 410, "shopee_share": 49.1, "shopee_delta": -92.2, "lazada": 24, "lazada_share": 2.9, "lazada_delta": -96.8}, {"category": "洁面", "total": 657, "share": 6.7, "delta": -94.3, "tiktok": 399, "tiktok_share": 60.7, "tiktok_delta": -94.7, "shopee": 246, "shopee_share": 37.4, "shopee_delta": -93.2, "lazada": 12, "lazada_share": 1.8, "lazada_delta": -96.5}, {"category": "防晒", "total": 535, "share": 5.5, "delta": -94.0, "tiktok": 243, "tiktok_share": 45.4, "tiktok_delta": -94.4, "shopee": 273, "shopee_share": 51.0, "shopee_delta": -93.3, "lazada": 19, "lazada_share": 3.6, "lazada_delta": -95.4}, {"category": "唇部", "total": 223, "share": 2.3, "delta": -94.3, "tiktok": 101, "tiktok_share": 45.3, "tiktok_delta": -93.0, "shopee": 109, "shopee_share": 48.9, "shopee_delta": -95.0, "lazada": 13, "lazada_share": 5.8, "lazada_delta": -95.9}, {"category": "爽肤水", "total": 204, "share": 2.1, "delta": -93.7, "tiktok": 106, "tiktok_share": 52.0, "tiktok_delta": -93.7, "shopee": 93, "shopee_share": 45.6, "shopee_delta": -93.2, "lazada": 5, "lazada_share": 2.5, "lazada_delta": -97.6}, {"category": "水", "total": 160, "share": 1.6, "delta": -94.8, "tiktok": 86, "tiktok_share": 53.8, "tiktok_delta": -95.5, "shopee": 58, "shopee_share": 36.2, "shopee_delta": -94.7, "lazada": 16, "lazada_share": 10.0, "lazada_delta": -85.3}, {"category": "赠品", "total": 9, "share": 0.1, "delta": -99.6, "tiktok": 0, "tiktok_share": 0.0, "tiktok_delta": -100.0, "shopee": 9, "shopee_share": 100.0, "shopee_delta": -99.1, "lazada": 0, "lazada_share": 0.0, "lazada_delta": -100.0}], "monthly_trend": [{"ym": "2025-07", "tiktok": 50744, "shopee": 60681, "lazada": 8479, "total": 119904}, {"ym": "2025-08", "tiktok": 49703, "shopee": 51493, "lazada": 7498, "total": 108694}, {"ym": "2025-09", "tiktok": 74301, "shopee": 52356, "lazada": 5541, "total": 132198}, {"ym": "2025-10", "tiktok": 74301, "shopee": 58095, "lazada": 8062, "total": 140458}, {"ym": "2025-11", "tiktok": 118727, "shopee": 68669, "lazada": 11725, "total": 199121}, {"ym": "2025-12", "tiktok": 179991, "shopee": 82747, "lazada": 13831, "total": 276569}, {"ym": "2026-01", "tiktok": 136696, "shopee": 94062, "lazada": 10121, "total": 240879}, {"ym": "2026-02", "tiktok": 149041, "shopee": 96436, "lazada": 11446, "total": 256923}, {"ym": "2026-03", "tiktok": 163103, "shopee": 123540, "lazada": 20774, "total": 307417}, {"ym": "2026-04", "tiktok": 142187, "shopee": 108784, "lazada": 13445, "total": 264416}, {"ym": "2026-05", "tiktok": 125045, "shopee": 105582, "lazada": 12398, "total": 243025}, {"ym": "2026-06", "tiktok": 149176, "shopee": 108921, "lazada": 17477, "total": 275574}, {"ym": "2026-07", "tiktok": 146189, "shopee": 103255, "lazada": 11310, "total": 260754}, {"ym": "2026-08", "tiktok": 150170, "shopee": 88977, "lazada": 9817, "total": 248964}, {"ym": "2026-09", "tiktok": 129339, "shopee": 76367, "lazada": 9908, "total": 215614}, {"ym": "2026-10", "tiktok": 100515, "shopee": 67599, "lazada": 8560, "total": 176674}, {"ym": "2026-11", "tiktok": 4877, "shopee": 4535, "lazada": 385, "total": 9797}], "daily_trend": {"tiktok": [{"day": 1, "qty": 2303}, {"day": 2, "qty": 2574}], "shopee": [{"day": 1, "qty": 1754}, {"day": 2, "qty": 2781}], "lazada": [{"day": 1, "qty": 203}, {"day": 2, "qty": 182}]}, "sku_table": [{"sku": "SKINTIFIC-351", "name": "PDRN 面霜", "total": 755, "tiktok": 410, "shopee": 311, "lazada": 34, "prev_total": 12051, "delta": -93.7}, {"sku": "SKINTIFIC-31001", "name": "美白面膜盒装400g", "total": 401, "tiktok": 194, "shopee": 197, "lazada": 10, "prev_total": 7920, "delta": -94.9}, {"sku": "SKINTIFIC-347", "name": "PDRN精华", "total": 379, "tiktok": 212, "shopee": 142, "lazada": 25, "prev_total": 5210, "delta": -92.7}, {"sku": "SKINTIFIC-05", "name": "5X面霜", "total": 373, "tiktok": 215, "shopee": 143, "lazada": 15, "prev_total": 5703, "delta": -93.5}, {"sku": "SKINTIFIC-388", "name": "美白水油喷雾", "total": 358, "tiktok": 205, "shopee": 130, "lazada": 23, "prev_total": 5347, "delta": -93.3}, {"sku": "SKINTIFIC-40600", "name": "玫瑰奶油洁面-粉色", "total": 333, "tiktok": 250, "shopee": 75, "lazada": 8, "prev_total": 6904, "delta": -95.2}, {"sku": "SKINTIFIC-389", "name": "水油保湿水50ml", "total": 279, "tiktok": 173, "shopee": 102, "lazada": 4, "prev_total": 5836, "delta": -95.2}, {"sku": "SKINTIFIC-21", "name": "美白面霜", "total": 212, "tiktok": 125, "shopee": 77, "lazada": 10, "prev_total": 3697, "delta": -94.3}, {"sku": "SKINTIFIC-30", "name": "5X面霜-80g", "total": 181, "tiktok": 76, "shopee": 99, "lazada": 6, "prev_total": 3152, "delta": -94.3}, {"sku": "SKINTIFIC-17102", "name": "有色面霜02", "total": 180, "tiktok": 89, "shopee": 83, "lazada": 8, "prev_total": 4144, "delta": -95.7}, {"sku": "SKINTIFIC-428", "name": "美白棉片", "total": 160, "tiktok": 86, "shopee": 58, "lazada": 16, "prev_total": 3104, "delta": -94.8}, {"sku": "SKINTIFIC-170", "name": "黄色水油喷雾100ml", "total": 159, "tiktok": 69, "shopee": 75, "lazada": 15, "prev_total": 2535, "delta": -93.7}, {"sku": "SKINTIFIC-7183NC", "name": "有色防晒3NC", "total": 139, "tiktok": 94, "shopee": 43, "lazada": 2, "prev_total": 1667, "delta": -91.7}, {"sku": "SKINTIFIC-4542", "name": "水光气垫替换装02", "total": 130, "tiktok": 68, "shopee": 61, "lazada": 1, "prev_total": 2632, "delta": -95.1}, {"sku": "SKINTIFIC-293", "name": "美白防晒霜30g", "total": 127, "tiktok": 55, "shopee": 70, "lazada": 2, "prev_total": 1699, "delta": -92.5}, {"sku": "SKINTIFIC-1602", "name": "遮瑕粉饼 02", "total": 125, "tiktok": 41, "shopee": 74, "lazada": 10, "prev_total": 2714, "delta": -95.4}, {"sku": "SKINTIFIC-77", "name": "艾草泥膜棒", "total": 122, "tiktok": 75, "shopee": 44, "lazada": 3, "prev_total": 1887, "delta": -93.5}, {"sku": "SKINTIFIC-23", "name": "磨皮棉片", "total": 121, "tiktok": 62, "shopee": 55, "lazada": 4, "prev_total": 2059, "delta": -94.1}, {"sku": "SKINTIFIC-1892", "name": "蓝色气垫替换装02", "total": 117, "tiktok": 57, "shopee": 53, "lazada": 7, "prev_total": 1857, "delta": -93.7}, {"sku": "SKINTIFIC-1342", "name": "哑光蓝色气垫02 11g", "total": 116, "tiktok": 37, "shopee": 76, "lazada": 3, "prev_total": 1783, "delta": -93.5}, {"sku": "SKINTIFIC-1343", "name": "哑光蓝色气垫03 11g", "total": 113, "tiktok": 62, "shopee": 46, "lazada": 5, "prev_total": 2038, "delta": -94.5}, {"sku": "SKINTIFIC-3262", "name": "水光气垫02", "total": 104, "tiktok": 55, "shopee": 45, "lazada": 4, "prev_total": 1988, "delta": -94.8}, {"sku": "SKINTIFIC-4193NC", "name": "半哑精华气垫3NC", "total": 104, "tiktok": 50, "shopee": 52, "lazada": 2, "prev_total": 1558, "delta": -93.3}, {"sku": "SKINTIFIC-17103", "name": "有色面霜03", "total": 104, "tiktok": 62, "shopee": 39, "lazada": 3, "prev_total": 3362, "delta": -96.9}, {"sku": "SKINTIFIC-18", "name": "烟酰胺水", "total": 95, "tiktok": 58, "shopee": 34, "lazada": 3, "prev_total": 1543, "delta": -93.8}, {"sku": "SKINTIFIC-4192NC", "name": "半哑精华气垫2NC", "total": 94, "tiktok": 33, "shopee": 53, "lazada": 8, "prev_total": 1746, "delta": -94.6}, {"sku": "SKINTIFIC-227", "name": "哑光防晒50g", "total": 91, "tiktok": 25, "shopee": 66, "lazada": 0, "prev_total": 1895, "delta": -95.2}, {"sku": "SKINTIFIC-340", "name": "烟酰胺美白洗面奶120ml", "total": 90, "tiktok": 39, "shopee": 49, "lazada": 2, "prev_total": 1194, "delta": -92.5}, {"sku": "SKINTIFIC-333", "name": "5X面霜50g", "total": 88, "tiktok": 40, "shopee": 48, "lazada": 0, "prev_total": 1280, "delta": -93.1}, {"sku": "SKINTIFIC-1603", "name": "遮瑕粉饼03", "total": 88, "tiktok": 37, "shopee": 45, "lazada": 6, "prev_total": 1449, "delta": -93.9}, {"sku": "SKINTIFIC-65", "name": "火山泥膜棒", "total": 87, "tiktok": 44, "shopee": 41, "lazada": 2, "prev_total": 1321, "delta": -93.4}, {"sku": "SKINTIFIC-329", "name": "美白防晒霜50g", "total": 87, "tiktok": 36, "shopee": 43, "lazada": 8, "prev_total": 1736, "delta": -95.0}, {"sku": "SKINTIFIC-7181NC", "name": "有色防晒1NC", "total": 86, "tiktok": 60, "shopee": 25, "lazada": 1, "prev_total": 1318, "delta": -93.5}, {"sku": "SKINTIFIC-72", "name": "防晒喷雾120ml", "total": 83, "tiktok": 41, "shopee": 39, "lazada": 3, "prev_total": 1206, "delta": -93.1}, {"sku": "SKINTIFIC-298", "name": "5X霜 清爽版", "total": 83, "tiktok": 39, "shopee": 40, "lazada": 4, "prev_total": 1380, "delta": -94.0}, {"sku": "SKINTIFIC-296", "name": "5X洗面奶-120mL", "total": 81, "tiktok": 33, "shopee": 47, "lazada": 1, "prev_total": 1216, "delta": -93.3}, {"sku": "SKINTIFIC-426001", "name": "B5软管修复霜", "total": 81, "tiktok": 45, "shopee": 26, "lazada": 10, "prev_total": 1340, "delta": -94.0}, {"sku": "SKINTIFIC-4541", "name": "水光气垫替换装01", "total": 79, "tiktok": 36, "shopee": 42, "lazada": 1, "prev_total": 1441, "delta": -94.5}, {"sku": "SKINTIFIC-3263", "name": "水光气垫03", "total": 77, "tiktok": 30, "shopee": 44, "lazada": 3, "prev_total": 1217, "delta": -93.7}, {"sku": "SKINTIFIC-1893", "name": "蓝色气垫替换装03", "total": 73, "tiktok": 0, "shopee": 73, "lazada": 0, "prev_total": 2144, "delta": -96.6}, {"sku": "SKINTIFIC-39", "name": "377面霜", "total": 71, "tiktok": 30, "shopee": 41, "lazada": 0, "prev_total": 1208, "delta": -94.1}, {"sku": "SKINTIFIC-17103A", "name": "有色面霜03A", "total": 69, "tiktok": 34, "shopee": 35, "lazada": 0, "prev_total": 1892, "delta": -96.4}, {"sku": "SKINTIFIC-12", "name": "5X水", "total": 64, "tiktok": 31, "shopee": 31, "lazada": 2, "prev_total": 887, "delta": -92.8}, {"sku": "SKINTIFIC-4543", "name": "水光气垫替换装03", "total": 63, "tiktok": 27, "shopee": 35, "lazada": 1, "prev_total": 1029, "delta": -93.9}, {"sku": "SKINTIFIC-17101", "name": "有色面霜01", "total": 63, "tiktok": 37, "shopee": 25, "lazada": 1, "prev_total": 1247, "delta": -94.9}, {"sku": "SKINTIFIC-297", "name": "祛痘粉水10ml", "total": 60, "tiktok": 0, "shopee": 59, "lazada": 1, "prev_total": 669, "delta": -91.0}, {"sku": "SKINTIFIC-1234", "name": "有色唇部精华04", "total": 60, "tiktok": 36, "shopee": 21, "lazada": 3, "prev_total": 1237, "delta": -95.1}, {"sku": "SKINTIFIC-86", "name": "紫色磨皮精华", "total": 59, "tiktok": 32, "shopee": 21, "lazada": 6, "prev_total": 929, "delta": -93.6}, {"sku": "SKINTIFIC-17", "name": "377精华", "total": 58, "tiktok": 33, "shopee": 25, "lazada": 0, "prev_total": 944, "delta": -93.9}, {"sku": "SKINTIFIC-3260", "name": "水光气垫00", "total": 58, "tiktok": 33, "shopee": 23, "lazada": 2, "prev_total": 1198, "delta": -95.2}], "all_skus": ["SKINTIFIC-01", "SKINTIFIC-02", "SKINTIFIC-03", "SKINTIFIC-04", "SKINTIFIC-05", "SKINTIFIC-06", "SKINTIFIC-07", "SKINTIFIC-08", "SKINTIFIC-09", "SKINTIFIC-10", "SKINTIFIC-105", "SKINTIFIC-114", "SKINTIFIC-12", "SKINTIFIC-120", "SKINTIFIC-122", "SKINTIFIC-123", "SKINTIFIC-12310U", "SKINTIFIC-12311U", "SKINTIFIC-12313U", "SKINTIFIC-12315U", "SKINTIFIC-1234", "SKINTIFIC-1235", "SKINTIFIC-1236", "SKINTIFIC-1237U", "SKINTIFIC-1239U", "SKINTIFIC-129", "SKINTIFIC-13", "SKINTIFIC-1340", "SKINTIFIC-1341", "SKINTIFIC-1342", "SKINTIFIC-1343", "SKINTIFIC-1343A", "SKINTIFIC-1344", "SKINTIFIC-1345", "SKINTIFIC-1346", "SKINTIFIC-137", "SKINTIFIC-139", "SKINTIFIC-14", "SKINTIFIC-140", "SKINTIFIC-147", "SKINTIFIC-150", "SKINTIFIC-152", "SKINTIFIC-157", "SKINTIFIC-16", "SKINTIFIC-1600", "SKINTIFIC-1601", "SKINTIFIC-1602", "SKINTIFIC-1603", "SKINTIFIC-1603A", "SKINTIFIC-1604", "SKINTIFIC-161", "SKINTIFIC-17", "SKINTIFIC-170", "SKINTIFIC-17100", "SKINTIFIC-17101", "SKINTIFIC-17102", "SKINTIFIC-17103", "SKINTIFIC-17103A", "SKINTIFIC-17104", "SKINTIFIC-18", "SKINTIFIC-180", "SKINTIFIC-183", "SKINTIFIC-1890", "SKINTIFIC-1891", "SKINTIFIC-1892", "SKINTIFIC-1893", "SKINTIFIC-1893A", "SKINTIFIC-1894", "SKINTIFIC-1895", "SKINTIFIC-1896", "SKINTIFIC-19", "SKINTIFIC-191", "SKINTIFIC-195", "SKINTIFIC-199", "SKINTIFIC-20", "SKINTIFIC-201", "SKINTIFIC-21", "SKINTIFIC-212", "SKINTIFIC-22", "SKINTIFIC-225", "SKINTIFIC-227", "SKINTIFIC-23", "SKINTIFIC-2300", "SKINTIFIC-2301", "SKINTIFIC-2302", "SKINTIFIC-2303", "SKINTIFIC-2303W", "SKINTIFIC-2304", "SKINTIFIC-24", "SKINTIFIC-2461", "SKINTIFIC-2462", "SKINTIFIC-2463", "SKINTIFIC-2463A", "SKINTIFIC-2464", "SKINTIFIC-2465", "SKINTIFIC-25", "SKINTIFIC-259", "SKINTIFIC-260N", "SKINTIFIC-260W", "SKINTIFIC-261", "SKINTIFIC-262", "SKINTIFIC-262W", "SKINTIFIC-263", "SKINTIFIC-263A", "SKINTIFIC-264", "SKINTIFIC-265", "SKINTIFIC-266", "SKINTIFIC-269", "SKINTIFIC-270N", "SKINTIFIC-270W", "SKINTIFIC-271", "SKINTIFIC-272", "SKINTIFIC-272W", "SKINTIFIC-273", "SKINTIFIC-273A", "SKINTIFIC-274", "SKINTIFIC-275", "SKINTIFIC-276", "SKINTIFIC-28", "SKINTIFIC-293", "SKINTIFIC-296", "SKINTIFIC-297", "SKINTIFIC-298", "SKINTIFIC-30", "SKINTIFIC-305", "SKINTIFIC-31", "SKINTIFIC-31001", "SKINTIFIC-32", "SKINTIFIC-3210", "SKINTIFIC-3211", "SKINTIFIC-3212", "SKINTIFIC-3213", "SKINTIFIC-3213A", "SKINTIFIC-3214", "SKINTIFIC-3260", "SKINTIFIC-3261", "SKINTIFIC-3262", "SKINTIFIC-3263", "SKINTIFIC-3263A", "SKINTIFIC-3264", "SKINTIFIC-329", "SKINTIFIC-33", "SKINTIFIC-331", "SKINTIFIC-332", "SKINTIFIC-333", "SKINTIFIC-334", "SKINTIFIC-340", "SKINTIFIC-3431", "SKINTIFIC-3432", "SKINTIFIC-3433", "SKINTIFIC-3433A", "SKINTIFIC-3434", "SKINTIFIC-347", "SKINTIFIC-351", "SKINTIFIC-38", "SKINTIFIC-388", "SKINTIFIC-389", "SKINTIFIC-39", "SKINTIFIC-40", "SKINTIFIC-40600", "SKINTIFIC-4190NC", "SKINTIFIC-4191NC", "SKINTIFIC-4192NC", "SKINTIFIC-4193NC", "SKINTIFIC-4193QNW", "SKINTIFIC-4194WN", "SKINTIFIC-42", "SKINTIFIC-426001", "SKINTIFIC-428", "SKINTIFIC-4331", "SKINTIFIC-4333", "SKINTIFIC-44", "SKINTIFIC-45", "SKINTIFIC-4540", "SKINTIFIC-4541", "SKINTIFIC-4542", "SKINTIFIC-4543", "SKINTIFIC-4543A", "SKINTIFIC-4544", "SKINTIFIC-458", "SKINTIFIC-46", "SKINTIFIC-48", "SKINTIFIC-50", "SKINTIFIC-52", "SKINTIFIC-56", "SKINTIFIC-57", "SKINTIFIC-62", "SKINTIFIC-64", "SKINTIFIC-65", "SKINTIFIC-68", "SKINTIFIC-70", "SKINTIFIC-7180NC", "SKINTIFIC-7181NC", "SKINTIFIC-7182NC", "SKINTIFIC-7183NC", "SKINTIFIC-7183QNW", "SKINTIFIC-7184WN", "SKINTIFIC-72", "SKINTIFIC-76", "SKINTIFIC-77", "SKINTIFIC-80", "SKINTIFIC-81", "SKINTIFIC-82", "SKINTIFIC-85", "SKINTIFIC-86", "SKINTIFIC-90", "SKINTIFIC-91", "SKINTIFIC-92", "SKINTIFIC-930", "SKINTIFIC-931", "SKINTIFIC-932", "SKINTIFIC-933", "SKINTIFIC-933A", "SKINTIFIC-934", "SKINTIFIC-935", "SKINTIFIC-936", "ZP000082", "ZP000148", "ZP000154", "ZP000187", "ZP000197", "ZP000278", "ZP000279", "ZP000280", "ZP000281", "ZP000354"], "current_ym": "2026-11", "prev_ym": "2026-10", "all_yms": ["2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11"]};
+    const SHIPMENT_DATA = __SHIPMENT_JSON__;
     const REFRESH_ENDPOINT = '/refresh-data';
     const FACT = {
       date: 0,
@@ -5010,11 +5187,22 @@ def render_html(payload: dict[str, Any]) -> str:
     });
 
 
+
+
+
+
+
     // ===== Shipment Page Rendering =====
+    const SHIPMENT_STATE = {
+      category: null,      // active category filter (null = all)
+      product: null,       // active product filter (sku), null = all
+      dim: 'sku',          // detail table dimension: sku | category | name
+      search: '',
+    };
+
     function formatShipmentNumber(n) {
-      if (n >= 10000) return (n / 10000).toFixed(1) + 'w';
-      if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
-      return String(n);
+      const v = Number(n) || 0;
+      return v.toLocaleString('en-US');
     }
     function formatShipmentDelta(delta) {
       if (delta === 0 || !isFinite(delta)) return '<span class="delta-flat">--</span>';
@@ -5022,23 +5210,71 @@ def render_html(payload: dict[str, Any]) -> str:
       const arrow = delta > 0 ? '↑' : '↓';
       return `<span class="${cls}">${arrow} ${Math.abs(delta).toFixed(1)}%</span>`;
     }
+    function shipmentBaseRows() {
+      let rows = SHIPMENT_DATA.product_rows.slice();
+      if (SHIPMENT_STATE.category) {
+        rows = rows.filter(r => r.category === SHIPMENT_STATE.category);
+      }
+      if (SHIPMENT_STATE.product) {
+        rows = rows.filter(r => r.sku === SHIPMENT_STATE.product);
+      }
+      return rows;
+    }
+    function shipmentSum(rows, key) {
+      return rows.reduce((acc, r) => acc + (Number(r[key]) || 0), 0);
+    }
+    function renderShipmentFilterRow() {
+      const row = document.getElementById('shipment-filter-row');
+      const chips = [];
+      if (SHIPMENT_STATE.category) {
+        chips.push(`<span class="shipment-filter-chip">品类：${SHIPMENT_STATE.category}<button type="button" data-shipment-clear="category" title="清除品类筛选">×</button></span>`);
+      }
+      if (SHIPMENT_STATE.product) {
+        const prod = SHIPMENT_DATA.product_rows.find(r => r.sku === SHIPMENT_STATE.product);
+        chips.push(`<span class="shipment-filter-chip">产品：${prod ? (prod.name || prod.sku) : SHIPMENT_STATE.product}<button type="button" data-shipment-clear="product" title="清除产品筛选">×</button></span>`);
+      }
+      if (chips.length) {
+        chips.push('<span class="shipment-filter-hint">已联动筛选整页数据 · 点击 × 或再次点击品类可恢复全部</span>');
+      } else {
+        chips.push('<span class="shipment-filter-hint">点击上方品类可联动筛选整页数据</span>');
+      }
+      row.innerHTML = chips.join('');
+    }
     function renderShipmentMetrics() {
       const cards = SHIPMENT_DATA.channel_cards;
       const periodLabel = document.getElementById('shipment-period-label');
-      const currYM = cards.current_ym;
-      const prevYM = cards.prev_ym;
-      periodLabel.textContent = `当月：${currYM}　对比上月：${prevYM}（环比变化）`;
+      periodLabel.textContent = `当月：${cards.current_ym}　对比上月：${cards.prev_ym}（环比变化）`;
       const grid = document.getElementById('shipment-metrics-grid');
-      const colors = ['#ee4d2d', '#2787e7', '#f5a623', '#15966a'];
+      const colors = ['#ee4d2d', '#ee4d2d', '#2787e7', '#f5a623'];
+      const rows = shipmentBaseRows();
+
+      // Channel totals restricted to the current filter
+      const filtered = {};
+      filtered.total = shipmentSum(rows, 'total');
+      filtered.tiktok = shipmentSum(rows, 'tiktok');
+      filtered.shopee = shipmentSum(rows, 'shopee');
+      filtered.lazada = shipmentSum(rows, 'lazada');
+
+      // Previous-month baseline. When no filter is active we use the
+      // authoritative month totals from the channel cards; when a category or
+      // product filter is active we recompute from the filtered product set.
+      const isFiltered = !!(SHIPMENT_STATE.category || SHIPMENT_STATE.product);
+      const prevKey = { total: 'prev_total', tiktok: 'prev_tiktok', shopee: 'prev_shopee', lazada: 'prev_lazada' };
+
       grid.innerHTML = cards.cards.map((card, i) => {
+        const key = card.key || (i === 0 ? 'total' : ['tiktok', 'shopee', 'lazada'][i - 1]);
         const color = colors[i] || '#44617f';
+        const current = isFiltered ? filtered[key] : card.current;
+        const prev = isFiltered ? shipmentSum(rows, prevKey[key]) : card.prev;
+        const delta = prev ? ((current - prev) / prev * 100) : 0;
+        const isActive = !isFiltered;
         return `
-          <div class="shipment-metric-card">
+          <div class="shipment-metric-card ${isActive ? 'is-active' : 'is-dimmed'}">
             <div class="shipment-metric-label">${card.label}</div>
-            <div class="shipment-metric-value" style="color:${color}">${formatShipmentNumber(card.current)}</div>
+            <div class="shipment-metric-value" style="color:${color}">${formatShipmentNumber(current)}</div>
             <div class="shipment-metric-sub">
-              上月 ${formatShipmentNumber(card.prev)}
-              <span class="shipment-metric-delta">${formatShipmentDelta(card.delta)}</span>
+              上月 ${formatShipmentNumber(prev)}
+              <span class="shipment-metric-delta">${formatShipmentDelta(Math.round(delta * 10) / 10)}</span>
             </div>
           </div>
         `;
@@ -5066,9 +5302,11 @@ def render_html(payload: dict[str, Any]) -> str:
           </tr>
         </thead>
       `;
-      const body = rows.map(r => `
-        <tr>
-          <td style="font-weight:700;">${r.category}</td>
+      const body = rows.map(r => {
+        const active = SHIPMENT_STATE.category === r.category;
+        return `
+        <tr${active ? ' style="background:rgba(39,135,231,.08);"' : ''}>
+          <td><button type="button" class="shipment-cat-btn${active ? ' is-active' : ''}" data-shipment-category="${r.category}">${r.category}</button></td>
           <td style="font-weight:700;">${formatShipmentNumber(r.total)}</td>
           <td>${r.share}%</td>
           <td>${formatShipmentDelta(r.delta)}</td>
@@ -5082,15 +5320,13 @@ def render_html(payload: dict[str, Any]) -> str:
           <td>${r.lazada_share}%</td>
           <td>${formatShipmentDelta(r.lazada_delta)}</td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
       table.innerHTML = header + '<tbody>' + body + '</tbody>';
     }
     function renderShipmentTrendChart() {
       const data = SHIPMENT_DATA.monthly_trend;
       const labels = data.map(d => d.ym);
-      const tiktokData = data.map(d => d.tiktok);
-      const shopeeData = data.map(d => d.shopee);
-      const lazadaData = data.map(d => d.lazada);
       const config = {
         type: 'line',
         data: {
@@ -5098,7 +5334,7 @@ def render_html(payload: dict[str, Any]) -> str:
           datasets: [
             {
               label: 'Tiktok',
-              data: tiktokData,
+              data: data.map(d => d.tiktok),
               borderColor: '#ee4d2d',
               backgroundColor: 'rgba(238,77,45,0.1)',
               borderWidth: 2.5,
@@ -5109,7 +5345,7 @@ def render_html(payload: dict[str, Any]) -> str:
             },
             {
               label: 'Shopee',
-              data: shopeeData,
+              data: data.map(d => d.shopee),
               borderColor: '#2787e7',
               backgroundColor: 'rgba(39,135,231,0.1)',
               borderWidth: 2.5,
@@ -5120,7 +5356,7 @@ def render_html(payload: dict[str, Any]) -> str:
             },
             {
               label: 'Lazada',
-              data: lazadaData,
+              data: data.map(d => d.lazada),
               borderColor: '#f5a623',
               backgroundColor: 'rgba(245,166,35,0.1)',
               borderWidth: 2,
@@ -5156,7 +5392,7 @@ def render_html(payload: dict[str, Any]) -> str:
             y: {
               ticks: {
                 color: '#817365',
-                callback: function(v) { return v >= 10000 ? Math.round(v/10000)+'w' : v >= 1000 ? (v/1000).toFixed(0)+'k' : v; },
+                callback: function(v) { return v >= 1000 ? v.toLocaleString('en-US') : v; },
               },
               grid: { color: 'rgba(61,42,17,0.08)' },
             },
@@ -5200,7 +5436,7 @@ def render_html(payload: dict[str, Any]) -> str:
               y: {
                 ticks: {
                   color: '#817365',
-                  callback: function(v) { return v >= 1000 ? (v/1000).toFixed(1)+'k' : v; },
+                  callback: function(v) { return v >= 1000 ? v.toLocaleString('en-US') : v; },
                 },
                 grid: { color: 'rgba(61,42,17,0.08)' },
               },
@@ -5208,75 +5444,190 @@ def render_html(payload: dict[str, Any]) -> str:
           },
         };
       }
-      if (state.charts['chart-shipment-daily-shopee']) state.charts['chart-shipment-daily-shopee'].destroy();
-      state.charts['chart-shipment-daily-shopee'] = new Chart(
-        document.getElementById('chart-shipment-daily-shopee'),
-        makeConfig('Shopee', daily.shopee, 'rgba(39,135,231,0.7)')
-      );
-      if (state.charts['chart-shipment-daily-tiktok']) state.charts['chart-shipment-daily-tiktok'].destroy();
-      state.charts['chart-shipment-daily-tiktok'] = new Chart(
-        document.getElementById('chart-shipment-daily-tiktok'),
-        makeConfig('Tiktok', daily.tiktok, 'rgba(238,77,45,0.7)')
-      );
+      const specs = [
+        ['chart-shipment-daily-tiktok', 'Tiktok', daily.tiktok, 'rgba(238,77,45,0.7)'],
+        ['chart-shipment-daily-shopee', 'Shopee', daily.shopee, 'rgba(39,135,231,0.7)'],
+        ['chart-shipment-daily-lazada', 'Lazada', daily.lazada, 'rgba(245,166,35,0.75)'],
+      ];
+      specs.forEach(([canvasId, label, data, color]) => {
+        if (state.charts[canvasId]) state.charts[canvasId].destroy();
+        state.charts[canvasId] = new Chart(document.getElementById(canvasId), makeConfig(label, data, color));
+      });
     }
-    function renderShipmentSkuTable(filterText) {
+    function shipmentGroupRows(rows, dim) {
+      const groups = new Map();
+      rows.forEach(r => {
+        let key, label;
+        if (dim === 'category') {
+          key = r.category || '未分类';
+          label = key;
+        } else if (dim === 'name') {
+          key = r.name || r.sku;
+          label = key;
+        } else {          key = r.sku;
+          label = r.sku;
+        }        if (!groups.has(key)) {
+          groups.set(key, {
+            key: key, label: label, sku: r.sku, category: r.category, name: r.name || '',
+            total: 0, tiktok: 0, shopee: 0, lazada: 0,
+            prev_total: 0, prev_tiktok: 0, prev_shopee: 0, prev_lazada: 0,
+          });
+        }
+        const g = groups.get(key);
+        g.total += r.total; g.tiktok += r.tiktok; g.shopee += r.shopee; g.lazada += r.lazada;
+        g.prev_total += r.prev_total || 0;
+        g.prev_tiktok += r.prev_tiktok || 0;
+        g.prev_shopee += r.prev_shopee || 0;
+        g.prev_lazada += r.prev_lazada || 0;
+      });
+      return Array.from(groups.values()).sort((a, b) => b.total - a.total);
+    }
+    function renderShipmentSkuTable() {
       const table = document.getElementById('shipment-sku-table');
-      let rows = SHIPMENT_DATA.sku_table;
-      if (filterText && filterText.trim()) {
-        const q = filterText.trim().toLowerCase();
+      const dim = SHIPMENT_STATE.dim;
+      const titleEl = document.getElementById('shipment-detail-title');
+      const subEl = document.getElementById('shipment-detail-subtitle');
+      const dimLabel = { sku: 'SKU货号', category: '品类', name: '产品名' }[dim];
+
+      let rows = shipmentBaseRows();
+      if (SHIPMENT_STATE.search) {
+        const q = SHIPMENT_STATE.search.toLowerCase();
         rows = rows.filter(r =>
-          r.sku.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)
+          (r.sku || '').toLowerCase().includes(q) ||
+          (r.name || '').toLowerCase().includes(q) ||
+          (r.category || '').toLowerCase().includes(q)
         );
       }
-      const header = `
-        <thead>
-          <tr>
-            <th>SKU</th>
-            <th>产品名</th>
-            <th>总量</th>
-            <th>Tiktok</th>
-            <th>Shopee</th>
-            <th>Lazada</th>
-            <th>上月</th>
-            <th>环比</th>
-          </tr>
-        </thead>
-      `;
-      const body = rows.map(r => `
-        <tr>
-          <td style="font-weight:700;color:#2787e7;">${r.sku}</td>
-          <td style="text-align:left;">${r.name}</td>
-          <td style="font-weight:700;">${formatShipmentNumber(r.total)}</td>
-          <td>${formatShipmentNumber(r.tiktok)}</td>
-          <td>${formatShipmentNumber(r.shopee)}</td>
-          <td>${formatShipmentNumber(r.lazada)}</td>
-          <td>${formatShipmentNumber(r.prev_total)}</td>
-          <td>${formatShipmentDelta(r.delta)}</td>
-        </tr>
-      `).join('');
+      const groups = shipmentGroupRows(rows, dim);
+
+      titleEl.textContent = `出货明细 · 按${dimLabel}汇总`;
+      subEl.textContent = `当月${dimLabel}维度出货量、分渠道明细及环比，共 ${groups.length} 条。点击行内产品可进一步联动筛选。`;
+
+      let header, body;
+      if (dim === 'sku') {
+        header = `
+          <thead>
+            <tr>
+              <th>SKU货号</th><th>产品名</th><th>品类</th><th>总量</th>
+              <th>Tiktok</th><th>Shopee</th><th>Lazada</th><th>上月</th><th>环比</th>
+            </tr>
+          </thead>`;
+        body = groups.map(g => {
+          const active = SHIPMENT_STATE.product === g.sku;
+          const delta = g.prev_total ? Math.round(((g.total - g.prev_total) / g.prev_total * 100) * 10) / 10 : 0;
+          return `
+          <tr${active ? ' style="background:rgba(39,135,231,.08);"' : ''}>
+            <td style="font-weight:700;color:#2787e7;">${g.key}</td>
+            <td style="text-align:left;"><button type="button" class="shipment-product-btn${active ? ' is-active' : ''}" data-shipment-product="${g.sku}">${g.name || g.label}</button></td>
+            <td style="text-align:left;">${g.category}</td>
+            <td style="font-weight:700;">${formatShipmentNumber(g.total)}</td>
+            <td>${formatShipmentNumber(g.tiktok)}</td>
+            <td>${formatShipmentNumber(g.shopee)}</td>
+            <td>${formatShipmentNumber(g.lazada)}</td>
+            <td>${formatShipmentNumber(g.prev_total)}</td>
+            <td>${formatShipmentDelta(delta)}</td>
+          </tr>`;
+        }).join('');
+      } else {
+        header = `
+          <thead>
+            <tr>
+              <th>${dimLabel}</th><th>品类</th><th>总量</th><th>占比</th>
+              <th>Tiktok</th><th>Shopee</th><th>Lazada</th><th>上月</th><th>环比</th>
+            </tr>
+          </thead>`;
+        const grandTotal = groups.reduce((a, g) => a + g.total, 0);
+        body = groups.map(g => {
+          const delta = g.prev_total ? Math.round(((g.total - g.prev_total) / g.prev_total * 100) * 10) / 10 : 0;
+          const share = grandTotal ? (g.total / grandTotal * 100).toFixed(1) : '0.0';
+          const isActive = dim === 'category' && SHIPMENT_STATE.category === g.key;
+          const labelCell = dim === 'category'
+            ? `<button type="button" class="shipment-cat-btn${isActive ? ' is-active' : ''}" data-shipment-category="${g.key}">${g.key}</button>`
+            : `<button type="button" class="shipment-product-btn${SHIPMENT_STATE.product === g.sku ? ' is-active' : ''}" data-shipment-product="${g.sku}">${g.label}</button>`;
+          return `
+          <tr${isActive ? ' style="background:rgba(39,135,231,.08);"' : ''}>
+            <td style="text-align:left;">${labelCell}</td>
+            <td style="text-align:left;">${g.category}</td>
+            <td style="font-weight:700;">${formatShipmentNumber(g.total)}</td>
+            <td>${share}%</td>
+            <td>${formatShipmentNumber(g.tiktok)}</td>
+            <td>${formatShipmentNumber(g.shopee)}</td>
+            <td>${formatShipmentNumber(g.lazada)}</td>
+            <td>${formatShipmentNumber(g.prev_total)}</td>
+            <td>${formatShipmentDelta(delta)}</td>
+          </tr>`;
+        }).join('');
+      }
       table.innerHTML = header + '<tbody>' + body + '</tbody>';
     }
     function renderShipmentPage() {
+      const dimRow = document.getElementById('shipment-dim-row');
+      if (dimRow) dimRow.hidden = state.activePage !== 'shipment';
+      renderShipmentFilterRow();
       renderShipmentMetrics();
       renderShipmentCategoryTable();
       renderShipmentTrendChart();
       renderShipmentDailyCharts();
-      renderShipmentSkuTable('');
+      renderShipmentSkuTable();
     }
-    document.addEventListener('input', function(e) {
-      if (e.target.id === 'shipment-sku-search') {
-        renderShipmentSkuTable(e.target.value);
+    function applyShipmentFilter() {
+      renderShipmentFilterRow();
+      renderShipmentMetrics();
+      renderShipmentCategoryTable();
+      renderShipmentDailyCharts();
+      renderShipmentSkuTable();
+    }
+    // Shipment interaction handlers (category click / product click / dim switch / search)
+    document.addEventListener('click', function(e) {
+      const catBtn = e.target.closest('[data-shipment-category]');
+      if (catBtn) {
+        const cat = catBtn.getAttribute('data-shipment-category');
+        SHIPMENT_STATE.category = (SHIPMENT_STATE.category === cat) ? null : cat;
+        SHIPMENT_STATE.product = null;
+        applyShipmentFilter();
+        return;
+      }
+      const prodBtn = e.target.closest('[data-shipment-product]');
+      if (prodBtn) {
+        const sku = prodBtn.getAttribute('data-shipment-product');
+        SHIPMENT_STATE.product = (SHIPMENT_STATE.product === sku) ? null : sku;
+        applyShipmentFilter();
+        return;
+      }
+      const clearBtn = e.target.closest('[data-shipment-clear]');
+      if (clearBtn) {
+        const what = clearBtn.getAttribute('data-shipment-clear');
+        if (what === 'category') SHIPMENT_STATE.category = null;
+        if (what === 'product') SHIPMENT_STATE.product = null;
+        applyShipmentFilter();
+        return;
+      }
+      const dimBtn = e.target.closest('#shipment-dim-switch-top button, #shipment-dim-switch button');
+      if (dimBtn) {
+        SHIPMENT_STATE.dim = dimBtn.getAttribute('data-dim');
+        document.querySelectorAll('#shipment-dim-switch-top button, #shipment-dim-switch button').forEach(b => {
+          b.classList.toggle('is-active', b.getAttribute('data-dim') === SHIPMENT_STATE.dim);
+        });
+        renderShipmentSkuTable();
+        return;
       }
     });
-
-    syncDateInputs();
+    document.addEventListener('input', function(e) {
+      if (e.target.id === 'shipment-sku-search') {
+        SHIPMENT_STATE.search = e.target.value;
+        renderShipmentSkuTable();
+      }
+    });
+    syncDateInputs();    syncDateInputs();    syncDateInputs();    syncDateInputs();    syncDateInputs();
     renderFilters();
     renderAll();
   </script>
 </body>
 </html>
 """
-    return html.replace("__PAYLOAD_JSON__", payload_json)
+    html = html.replace("__PAYLOAD_JSON__", payload_json)
+    html = html.replace("__SHIPMENT_JSON__", load_shipment_json())
+    return html
 
 
 def generate_report(

@@ -1,0 +1,13 @@
+data/
+.git/
+.github/
+__pycache__/
+*.pyc
+*.py
+scripts/
+wrangler.toml
+wrangler.jsonc
+.gitignore
+DEPLOY_GUIDE.md
+shipment_raw.csv
+shipment_data.json

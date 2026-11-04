@@ -1,516 +1,208 @@
 #!/usr/bin/env python3
 """
-Sync shipment page changes into build_flagship_onsite_page1.py
-so the auto-refresh pipeline preserves the new shipment tab.
+Sync the updated "出货分析" (shipment) section into
+build_flagship_onsite_page1.py so the daily auto-refresh build keeps the
+new layout / linkage features.
+
+It reads the canonical shipment CSS / HTML / JS from inject_shipment_page.py
+and rewrites the corresponding blocks inside the build script template.
+
+Run:  python sync_build_script.py
 """
-import json
+import re
+from pathlib import Path
 
-BUILD_FILE = "build_flagship_onsite_page1.py"
-DATA_FILE = "shipment_data.json"
+import inject_shipment_page as inj
 
-with open(DATA_FILE, "r", encoding="utf-8") as f:
-    shipment_data = json.load(f)
-shipment_data_json = json.dumps(shipment_data, ensure_ascii=False)
+ROOT = Path(__file__).resolve().parent
+BUILD = ROOT / "build_flagship_onsite_page1.py"
 
-with open(BUILD_FILE, "r", encoding="utf-8") as f:
-    content = f.read()
 
-# 1. Add shipment Tab button
-old_tabs = '        <button class="dashboard-tab" type="button" data-dashboard-page="onsite">站内投放</button>\n      </div>'
-new_tabs = '        <button class="dashboard-tab" type="button" data-dashboard-page="onsite">站内投放</button>\n        <button class="dashboard-tab" type="button" data-dashboard-page="shipment">出货分析</button>\n      </div>'
-content = content.replace(old_tabs, new_tabs, 1)
+def replace_once(text, start_marker, end_marker, new_block, label, include_end=True):
+    start = text.find(start_marker)
+    if start == -1:
+        raise SystemExit(f"[!] start marker not found for {label}: {start_marker!r}")
+    end = text.find(end_marker, start)
+    if end == -1:
+        raise SystemExit(f"[!] end marker not found for {label}: {end_marker!r}")
+    if include_end:
+        return text[:start] + new_block + text[end + len(end_marker):]
+    return text[:start] + new_block + text[end:]
 
-# 2. Add CSS before </style>
-shipment_css = """
-    /* ===== Shipment Page ===== */
-    .shipment-metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 18px;
-    }
-    .shipment-metric-card {
-      background: var(--paper);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      border-radius: var(--radius-xl);
-      padding: 18px 20px;
-    }
-    .shipment-metric-label {
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #7c6f63;
-      margin-bottom: 8px;
-      font-weight: 700;
-    }
-    .shipment-metric-value {
-      font-family: "Plus Jakarta Sans", "Noto Sans SC", sans-serif;
-      font-size: 28px;
-      font-weight: 800;
-      line-height: 1;
-      color: var(--ink);
-    }
-    .shipment-metric-sub {
-      margin-top: 10px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .shipment-metric-delta {
-      display: inline-block;
-      margin-left: 6px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-    .shipment-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-    .shipment-table th,
-    .shipment-table td {
-      padding: 10px 12px;
-      text-align: right;
-      border-bottom: 1px solid var(--line);
-    }
-    .shipment-table th {
-      font-weight: 700;
-      color: #44617f;
-      background: rgba(248,250,252,0.8);
-      font-size: 13px;
-      white-space: nowrap;
-    }
-    .shipment-table td:first-child,
-    .shipment-table th:first-child {
-      text-align: left;
-    }
-    .shipment-table tbody tr:hover {
-      background: rgba(238,77,45,0.03);
-    }
-    .shipment-chart-wrap {
-      position: relative;
-      height: 340px;
-    }
-    .shipment-dual-chart {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
-    }
-    .shipment-dual-chart .panel {
-      padding: 16px;
-    }
-    .shipment-dual-chart .chart-wrap-inner {
-      position: relative;
-      height: 280px;
-    }
-    .shipment-sku-filter {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .shipment-sku-filter input {
-      padding: 8px 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      font-size: 14px;
-      width: 220px;
-    }
-    .shipment-sku-filter label {
-      font-size: 13px;
-      font-weight: 700;
-      color: #44617f;
-      white-space: nowrap;
-    }
-    @media (max-width: 860px) {
-      .shipment-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .shipment-dual-chart { grid-template-columns: 1fr; }
-    }
-"""
-content = content.replace("  </style>", shipment_css + "\n  </style>", 1)
 
-# 3. Add shipment-page HTML after onsite-page </main>
-old_onsite_end = """      <section class="formula-note">
-        站内投放口径：订单量 = 站内广告 Order；广告 GMV 占比 = Ads GMV / 店铺 GMV；ROI = Ads GMV / Ads Spend；CPC = Ads Spend / Clicks；CTR = Clicks / Impression；CVR = Order / Clicks；CPA = Ads Spend / Order。
-      </section>
-    </main>
-  </div>"""
+def replace_span(text, start_marker, end_marker, new_block, label):
+    """Replace [start_marker, end_marker) with new_block.
 
-shipment_page_html = """      <section class="formula-note">
-        站内投放口径：订单量 = 站内广告 Order；广告 GMV 占比 = Ads GMV / 店铺 GMV；ROI = Ads GMV / Ads Spend；CPC = Ads Spend / Clicks；CTR = Clicks / Impression；CVR = Order / Clicks；CPA = Ads Spend / Order。
-      </section>
-    </main>
+    Works both for a legacy build script and an already-synced one, because
+    `start_marker` is unique to the shipped section and `end_marker` is a
+    stable boundary that follows it.
+    """
+    start = text.find(start_marker)
+    if start == -1:
+        raise SystemExit(f"[!] start marker not found for {label}: {start_marker!r}")
+    end = text.find(end_marker, start)
+    if end == -1:
+        raise SystemExit(f"[!] end marker not found for {label}: {end_marker!r}")
+    return text[:start] + new_block + text[end:]
 
-    <main class="dashboard-page" id="shipment-page" hidden>
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">渠道总出货指标</h2>
-            <div class="panel-subtitle" id="shipment-period-label"></div>
+
+def main():
+    src = BUILD.read_text(encoding="utf-8")
+    original = src
+
+    # ---- 1. CSS block inside the template --------------------------------
+    # Start marker is unique to the shipment CSS; end marker is the stable
+    # boundary that follows it (the closing brace of the media query).
+    src = replace_span(
+        src,
+        "    /* ===== Shipment Page ===== */",
+        "\n  </style>",
+        inj.CSS + "\n  </style>",
+        "shipment CSS",
+    )
+    # ---- 2. HTML block ----------------------------------------------------
+    # The build script template ends the shipment <main> right before the
+    # <script> tag. We replace up to (not including) the "<script>" marker
+    # and re-emit it ourselves, so the closing </main> stays unique.
+    html_body = inj.HTML.rstrip("\n")
+    src = replace_span(
+        src,
+        '    <main class="dashboard-page" id="shipment-page" hidden>',
+        "\n  <script>",
+        html_body + "\n\n",
+        "shipment HTML",
+    )
+
+    # ---- 3. SHIPMENT_DATA placeholder ------------------------------------
+    # Replace the hardcoded JSON with a runtime placeholder that is filled
+    # from shipment_data.json at build time.
+    old_data_start = "    const SHIPMENT_DATA = "
+    idx = src.find(old_data_start)
+    if idx == -1:
+        raise SystemExit("[!] SHIPMENT_DATA declaration not found in build script")
+    semi = src.find(";\n", idx)
+    placeholder = "    const SHIPMENT_DATA = __SHIPMENT_JSON__;\n"
+    if src[idx:semi + 1] != placeholder.rstrip("\n"):
+        src = (src[:idx] + placeholder.rstrip("\n") + src[semi:])
+    else:
+        print("[=] SHIPMENT_DATA already uses the placeholder")
+
+    # ---- 4. JS logic block -----------------------------------------------
+    src = replace_span(
+        src,
+        "    // ===== Shipment Page Rendering =====",
+        "    syncDateInputs();",
+        inj.JS + "    syncDateInputs();",
+        "shipment JS",
+    )
+
+    # ---- 5. Date-control dim row (below the time inputs) -----------------
+    ctrl_old = """          <div class="field">
+            <label for="compare-end-date">对比结束</label>
+            <input id="compare-end-date" type="date">
           </div>
         </div>
-        <div class="shipment-metrics-grid" id="shipment-metrics-grid"></div>
-      </section>
-
-      <section class="panel" style="margin-top: 18px;">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">DMS · 品类出货量</h2>
-            <div class="panel-subtitle">各品类出货总量及分平台明细，含环比变化。</div>
+      </div>
+    </section>"""
+    ctrl_new = """          <div class="field">
+            <label for="compare-end-date">对比结束</label>
+            <input id="compare-end-date" type="date">
           </div>
         </div>
-        <div class="table-wrap meta-table-scroll">
-          <table class="shipment-table" id="shipment-category-table"></table>
-        </div>
-      </section>
-
-      <section class="panel" style="margin-top: 18px;">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">TT销量 &amp; 货架出货趋势</h2>
-            <div class="panel-subtitle">Tiktok 与 Shopee 月度出货量趋势对比。</div>
+        <div class="shipment-dim-row" id="shipment-dim-row" hidden>
+          <span class="shipment-dim-row-label">明细维度</span>
+          <div class="shipment-dim-switch" id="shipment-dim-switch-top" role="group" aria-label="明细维度">
+            <button type="button" data-dim="sku" class="is-active">SKU货号</button>
+            <button type="button" data-dim="category">品类</button>
+            <button type="button" data-dim="name">产品名</button>
           </div>
         </div>
-        <div class="shipment-chart-wrap"><canvas id="chart-shipment-trend"></canvas></div>
-      </section>
+      </div>
+    </section>"""
+    if ctrl_old in src:
+        src = src.replace(ctrl_old, ctrl_new, 1)
+    elif ctrl_new in src:
+        print("[=] date-control dim row already present")
+    else:
+        raise SystemExit("[!] date-control block not found in build script")
 
-      <section class="panel" style="margin-top: 18px;">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">日趋势 · 货架销量 / TT销量</h2>
-            <div class="panel-subtitle">当月每日分平台出货量趋势。</div>
-          </div>
-        </div>
-        <div class="shipment-dual-chart">
-          <div class="panel">
-            <h3 style="font-size:16px;margin-bottom:10px;color:#44617f;">货架销量日趋势</h3>
-            <div class="chart-wrap-inner"><canvas id="chart-shipment-daily-shopee"></canvas></div>
-          </div>
-          <div class="panel">
-            <h3 style="font-size:16px;margin-bottom:10px;color:#44617f;">TT销量日趋势</h3>
-            <div class="chart-wrap-inner"><canvas id="chart-shipment-daily-tiktok"></canvas></div>
-          </div>
-        </div>
-      </section>
+    # ---- 6. Wire the placeholder replacement in render_html --------------
+    old_return = '    return html.replace("__PAYLOAD_JSON__", payload_json)'
+    new_return = '''    html = html.replace("__PAYLOAD_JSON__", payload_json)
+    html = html.replace("__SHIPMENT_JSON__", load_shipment_json())
+    return html'''
+    if old_return in src:
+        src = src.replace(old_return, new_return, 1)
+    elif new_return not in src:
+        raise SystemExit("[!] render_html return statement not found")
+    else:
+        print("[=] render_html already wired")
 
-      <section class="panel table-panel" style="margin-top: 18px;">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">TT&amp;货架 · 月累计出货对比</h2>
-            <div class="panel-subtitle">当月Top50 SKU出货明细，含分平台量及环比。</div>
-          </div>
-        </div>
-        <div class="shipment-sku-filter">
-          <label for="shipment-sku-search">筛选SKU</label>
-          <input id="shipment-sku-search" type="text" placeholder="输入SKU或产品名...">
-        </div>
-        <div class="table-wrap meta-table-scroll">
-          <table class="shipment-table" id="shipment-sku-table"></table>
-        </div>
-      </section>
+    # ---- 7. Add load_shipment_json helper --------------------------------
+    helper = '''
+SHIPMENT_JSON_PATH = REPORT_DIR / "shipment_data.json"
 
-      <section class="formula-note">
-        出货分析口径：数据来源于出货明细表，Platform 归一化为 Tiktok / Shopee / Lazada 三渠道；环比 = (当月 - 上月) / 上月 × 100%；当前月数据为月中实时累计，完整月数据需月末统计。
-      </section>
-    </main>
-  </div>"""
-content = content.replace(old_onsite_end, shipment_page_html, 1)
 
-# 4. Add SHIPMENT_DATA constant and update renderAll
-data_line = f'    const SHIPMENT_DATA = {shipment_data_json};'
-content = content.replace('    const REFRESH_ENDPOINT = \'/refresh-data\';', data_line + '\n    const REFRESH_ENDPOINT = \'/refresh-data\';', 1)
+def load_shipment_json() -> str:
+    """Return the shipment dataset as a compact JSON literal.
 
-# 5. Update renderAll
-old_render = """    function renderAll() {
-      document.getElementById('store-page').hidden = state.activePage !== 'store';
-      document.getElementById('meta-page').hidden = state.activePage !== 'meta';
-      document.getElementById('onsite-page').hidden = state.activePage !== 'onsite';"""
-new_render = """    function renderAll() {
-      document.getElementById('store-page').hidden = state.activePage !== 'store';
-      document.getElementById('meta-page').hidden = state.activePage !== 'meta';
-      document.getElementById('onsite-page').hidden = state.activePage !== 'onsite';
-      document.getElementById('shipment-page').hidden = state.activePage !== 'shipment';"""
-content = content.replace(old_render, new_render, 1)
-
-old_onsite_render = """      if (state.activePage === 'onsite') {
-        renderOnsitePage();
-        return;
-      }"""
-new_onsite_render = """      if (state.activePage === 'onsite') {
-        renderOnsitePage();
-        return;
-      }
-      if (state.activePage === 'shipment') {
-        renderShipmentPage();
-        return;
-      }"""
-content = content.replace(old_onsite_render, new_onsite_render, 1)
-
-# 6. Add shipment JS functions before syncDateInputs
-shipment_js = """
-    // ===== Shipment Page Rendering =====
-    function formatShipmentNumber(n) {
-      if (n >= 10000) return (n / 10000).toFixed(1) + 'w';
-      if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
-      return String(n);
-    }
-    function formatShipmentDelta(delta) {
-      if (delta === 0 || !isFinite(delta)) return '<span class="delta-flat">--</span>';
-      const cls = delta > 0 ? 'delta-up' : 'delta-down';
-      const arrow = delta > 0 ? '↑' : '↓';
-      return `<span class="${cls}">${arrow} ${Math.abs(delta).toFixed(1)}%</span>`;
-    }
-    function renderShipmentMetrics() {
-      const cards = SHIPMENT_DATA.channel_cards;
-      const periodLabel = document.getElementById('shipment-period-label');
-      const currYM = cards.current_ym;
-      const prevYM = cards.prev_ym;
-      periodLabel.textContent = `当月：${currYM}　对比上月：${prevYM}（环比变化）`;
-      const grid = document.getElementById('shipment-metrics-grid');
-      const colors = ['#ee4d2d', '#2787e7', '#f5a623', '#15966a'];
-      grid.innerHTML = cards.cards.map((card, i) => {
-        const color = colors[i] || '#44617f';
-        return `
-          <div class="shipment-metric-card">
-            <div class="shipment-metric-label">${card.label}</div>
-            <div class="shipment-metric-value" style="color:${color}">${formatShipmentNumber(card.current)}</div>
-            <div class="shipment-metric-sub">
-              上月 ${formatShipmentNumber(card.prev)}
-              <span class="shipment-metric-delta">${formatShipmentDelta(card.delta)}</span>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-    function renderShipmentCategoryTable() {
-      const table = document.getElementById('shipment-category-table');
-      const rows = SHIPMENT_DATA.category_table;
-      const header = `
-        <thead>
-          <tr>
-            <th>品类</th>
-            <th>总量</th>
-            <th>占比</th>
-            <th>环比</th>
-            <th>Tiktok</th>
-            <th>TT占比</th>
-            <th>TT环比</th>
-            <th>Shopee</th>
-            <th>SP占比</th>
-            <th>SP环比</th>
-            <th>Lazada</th>
-            <th>LZ占比</th>
-            <th>LZ环比</th>
-          </tr>
-        </thead>
-      `;
-      const body = rows.map(r => `
-        <tr>
-          <td style="font-weight:700;">${r.category}</td>
-          <td style="font-weight:700;">${formatShipmentNumber(r.total)}</td>
-          <td>${r.share}%</td>
-          <td>${formatShipmentDelta(r.delta)}</td>
-          <td>${formatShipmentNumber(r.tiktok)}</td>
-          <td>${r.tiktok_share}%</td>
-          <td>${formatShipmentDelta(r.tiktok_delta)}</td>
-          <td>${formatShipmentNumber(r.shopee)}</td>
-          <td>${r.shopee_share}%</td>
-          <td>${formatShipmentDelta(r.shopee_delta)}</td>
-          <td>${formatShipmentNumber(r.lazada)}</td>
-          <td>${r.lazada_share}%</td>
-          <td>${formatShipmentDelta(r.lazada_delta)}</td>
-        </tr>
-      `).join('');
-      table.innerHTML = header + '<tbody>' + body + '</tbody>';
-    }
-    function renderShipmentTrendChart() {
-      const data = SHIPMENT_DATA.monthly_trend;
-      const labels = data.map(d => d.ym);
-      const tiktokData = data.map(d => d.tiktok);
-      const shopeeData = data.map(d => d.shopee);
-      const lazadaData = data.map(d => d.lazada);
-      const config = {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'Tiktok',
-              data: tiktokData,
-              borderColor: '#ee4d2d',
-              backgroundColor: 'rgba(238,77,45,0.1)',
-              borderWidth: 2.5,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              tension: 0.35,
-              fill: false,
-            },
-            {
-              label: 'Shopee',
-              data: shopeeData,
-              borderColor: '#2787e7',
-              backgroundColor: 'rgba(39,135,231,0.1)',
-              borderWidth: 2.5,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              tension: 0.35,
-              fill: false,
-            },
-            {
-              label: 'Lazada',
-              data: lazadaData,
-              borderColor: '#f5a623',
-              backgroundColor: 'rgba(245,166,35,0.1)',
-              borderWidth: 2,
-              pointRadius: 3,
-              pointHoverRadius: 5,
-              tension: 0.35,
-              fill: false,
-            },
-          ],
+    Falls back to an empty dataset so the build never breaks when the
+    shipment source is unavailable.
+    """
+    if SHIPMENT_JSON_PATH.exists():
+        raw = SHIPMENT_JSON_PATH.read_text(encoding="utf-8").strip()
+        if raw:
+            return raw
+    return json.dumps(
+        {
+            "channel_cards": {"current_ym": "", "prev_ym": "", "cards": []},
+            "category_table": [],
+            "monthly_trend": [],
+            "daily_trend": {"tiktok": [], "shopee": [], "lazada": []},
+            "product_rows": [],
+            "all_skus": [],
+            "current_ym": "",
+            "prev_ym": "",
+            "all_yms": [],
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: {
-              position: 'top',
-              labels: { color: '#44617f', font: { size: 13, weight: '700' } },
-            },
-            tooltip: {
-              callbacks: {
-                label: function(ctx) {
-                  return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString();
-                },
-              },
-            },
-          },
-          scales: {
-            x: {
-              ticks: { color: '#817365', font: { size: 11 } },
-              grid: { display: false },
-            },
-            y: {
-              ticks: {
-                color: '#817365',
-                callback: function(v) { return v >= 10000 ? Math.round(v/10000)+'w' : v >= 1000 ? (v/1000).toFixed(0)+'k' : v; },
-              },
-              grid: { color: 'rgba(61,42,17,0.08)' },
-            },
-          },
-        },
-      };
-      if (state.charts['chart-shipment-trend']) state.charts['chart-shipment-trend'].destroy();
-      state.charts['chart-shipment-trend'] = new Chart(document.getElementById('chart-shipment-trend'), config);
-    }
-    function renderShipmentDailyCharts() {
-      const daily = SHIPMENT_DATA.daily_trend;
-      function makeConfig(label, data, color) {
-        return {
-          type: 'bar',
-          data: {
-            labels: data.map(d => d.day + '日'),
-            datasets: [{
-              label,
-              data: data.map(d => d.qty),
-              backgroundColor: color,
-              borderRadius: 6,
-              barPercentage: 0.6,
-            }],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'top',
-                labels: { color: '#44617f', font: { size: 12, weight: '700' } },
-              },
-              tooltip: {
-                callbacks: {
-                  label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString(); },
-                },
-              },
-            },
-            scales: {
-              x: { ticks: { color: '#817365', font: { size: 11 } }, grid: { display: false } },
-              y: {
-                ticks: {
-                  color: '#817365',
-                  callback: function(v) { return v >= 1000 ? (v/1000).toFixed(1)+'k' : v; },
-                },
-                grid: { color: 'rgba(61,42,17,0.08)' },
-              },
-            },
-          },
-        };
-      }
-      if (state.charts['chart-shipment-daily-shopee']) state.charts['chart-shipment-daily-shopee'].destroy();
-      state.charts['chart-shipment-daily-shopee'] = new Chart(
-        document.getElementById('chart-shipment-daily-shopee'),
-        makeConfig('Shopee', daily.shopee, 'rgba(39,135,231,0.7)')
-      );
-      if (state.charts['chart-shipment-daily-tiktok']) state.charts['chart-shipment-daily-tiktok'].destroy();
-      state.charts['chart-shipment-daily-tiktok'] = new Chart(
-        document.getElementById('chart-shipment-daily-tiktok'),
-        makeConfig('Tiktok', daily.tiktok, 'rgba(238,77,45,0.7)')
-      );
-    }
-    function renderShipmentSkuTable(filterText) {
-      const table = document.getElementById('shipment-sku-table');
-      let rows = SHIPMENT_DATA.sku_table;
-      if (filterText && filterText.trim()) {
-        const q = filterText.trim().toLowerCase();
-        rows = rows.filter(r =>
-          r.sku.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)
-        );
-      }
-      const header = `
-        <thead>
-          <tr>
-            <th>SKU</th>
-            <th>产品名</th>
-            <th>总量</th>
-            <th>Tiktok</th>
-            <th>Shopee</th>
-            <th>Lazada</th>
-            <th>上月</th>
-            <th>环比</th>
-          </tr>
-        </thead>
-      `;
-      const body = rows.map(r => `
-        <tr>
-          <td style="font-weight:700;color:#2787e7;">${r.sku}</td>
-          <td style="text-align:left;">${r.name}</td>
-          <td style="font-weight:700;">${formatShipmentNumber(r.total)}</td>
-          <td>${formatShipmentNumber(r.tiktok)}</td>
-          <td>${formatShipmentNumber(r.shopee)}</td>
-          <td>${formatShipmentNumber(r.lazada)}</td>
-          <td>${formatShipmentNumber(r.prev_total)}</td>
-          <td>${formatShipmentDelta(r.delta)}</td>
-        </tr>
-      `).join('');
-      table.innerHTML = header + '<tbody>' + body + '</tbody>';
-    }
-    function renderShipmentPage() {
-      renderShipmentMetrics();
-      renderShipmentCategoryTable();
-      renderShipmentTrendChart();
-      renderShipmentDailyCharts();
-      renderShipmentSkuTable('');
-    }
-    document.addEventListener('input', function(e) {
-      if (e.target.id === 'shipment-sku-search') {
-        renderShipmentSkuTable(e.target.value);
-      }
-    });
-"""
-content = content.replace('    syncDateInputs();\n    renderFilters();\n    renderAll();\n  </script>', shipment_js + '\n    syncDateInputs();\n    renderFilters();\n    renderAll();\n  </script>', 1)
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
 
-with open(BUILD_FILE, "w", encoding="utf-8") as f:
-    f.write(content)
 
-print("Build script synced successfully!")
-print(f"File size: {len(content)} bytes")
+'''
+    anchor = "def render_html(payload: dict[str, Any]) -> str:"
+    if anchor not in src:
+        raise SystemExit("[!] render_html definition not found")
+    if "def load_shipment_json()" not in src:
+        src = src.replace(anchor, helper.lstrip("\n") + anchor, 1)
+    else:
+        print("[=] load_shipment_json already present")
+
+    # ---- 8. Make sure `json` is imported ---------------------------------
+    if not re.search(r"^import json$", src, flags=re.M):
+        src = re.sub(r"^import csv$", "import csv\nimport json", src, count=1, flags=re.M)
+
+    if src == original:
+        print("[=] build script already up to date - nothing changed")
+        return
+
+    # ---- 9. Sanity checks ------------------------------------------------
+    problems = []
+    if "<script>    </main>" in src:
+        problems.append("stray </main> after <script>")
+    if "<script>\n  <script>" in src:
+        problems.append("duplicate <script> tag")
+    if src.count("<script>") != 1:
+        problems.append(f"expected exactly 1 inline <script>, found {src.count('<script>')}")
+    if not re.search(r"</main>\n+\s*<script>", src):
+        problems.append("shipment <main> is not properly closed before <script>")
+    if problems:
+        raise SystemExit("[!] build script structure broken: " + "; ".join(problems))
+
+    BUILD.write_text(src, encoding="utf-8")
+    print(f"[OK] build_flagship_onsite_page1.py updated ({len(src):,} chars)")
+
+
+if __name__ == "__main__":
+    main()

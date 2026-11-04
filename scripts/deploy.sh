@@ -1,23 +1,34 @@
 #!/usr/bin/env bash
-# Cloudflare Pages deployment script (CI-safe)
+# Deploy the dashboard to Cloudflare Pages.
+#
+# Only the website artifacts are published (index.html, functions/, static
+# assets). Source CSVs, Python scripts and Git metadata are excluded so the
+# upload stays small and Cloudflare's 25 MiB per-file limit is respected.
 set -euo pipefail
 
-echo "::group::Environment"
-echo "CF_PAGES=1" && echo "CF_PAGES_UPLOAD_JWT=${CF_PAGES_UPLOAD_JWT:+present}"
-echo "CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:+present}"
-echo "CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID:+present}"
-echo "CF_PAGES_BRANCH=${CF_PAGES_BRANCH:-}"
-echo "CF_PAGES_COMMIT_SHA=${CF_PAGES_COMMIT_SHA:-}"
-echo "::endgroup::"
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PROJECT_NAME="${CLOUDFLARE_PAGES_PROJECT:-ph-shopee-dashboard-wting}"
+STAGING_DIR="${TMPDIR:-/tmp}/ph-shopee-pages-staging"
 
-# Pages CI provides CF_PAGES_UPLOAD_JWT automatically
-if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] && [ -z "${CF_PAGES_UPLOAD_JWT:-}" ]; then
-  echo "No Cloudflare credentials found in environment." >&2
-  exit 1
+rm -rf "$STAGING_DIR"
+mkdir -p "$STAGING_DIR"
+
+# Copy the published site.
+cp "$PROJECT_DIR/index.html" "$STAGING_DIR/index.html"
+
+# Functions (Cloudflare Pages Functions) - only if present.
+if [ -d "$PROJECT_DIR/functions" ]; then
+  mkdir -p "$STAGING_DIR/functions"
+  cp -R "$PROJECT_DIR/functions/." "$STAGING_DIR/functions/"
 fi
 
-npx --yes wrangler@latest pages deploy . \
-  --project-name "${CF_PAGES_PROJECT_NAME:-ph-shopee-dashboard-wting}" \
-  --branch "${CF_PAGES_BRANCH:-main}" \
-  --commit-hash "${CF_PAGES_COMMIT_SHA:-HEAD}" \
-  --commit-message "Deploy from CI"
+# Static assets.
+for item in _headers _redirects robots.txt favicon.ico assets styles; do
+  if [ -e "$PROJECT_DIR/$item" ]; then
+    cp -R "$PROJECT_DIR/$item" "$STAGING_DIR/"
+  fi
+done
+
+echo "Deploying from $STAGING_DIR"
+cd "$STAGING_DIR"
+exec npx wrangler pages deploy . --project-name="$PROJECT_NAME" "$@"

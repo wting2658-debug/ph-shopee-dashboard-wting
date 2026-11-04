@@ -3,3 +3,9 @@ data/*.tmp
 __pycache__/
 *.pyc
 DEPLOY_GUIDE.md
+
+# local test artifacts
+.playwright-cli/
+shot_*.png
+index_backup_*.html
+shipment_raw.csv
