@@ -14,8 +14,9 @@ Data model supports:
 """
 import csv
 import json
+import re
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 REPORT_DIR = Path(__file__).resolve().parent
@@ -53,6 +54,31 @@ def parse_qty(raw):
         return 0
 
 
+def parse_shipment_date(raw, year):
+    """解析真实出货日期；Excel 序号使用默认的 1900 日期系统。"""
+    text = (raw or "").strip()
+    if not text:
+        raise ValueError("日期为空")
+
+    if re.fullmatch(r"\d{1,2}/\d{1,2}", text):
+        month, day = map(int, text.split("/"))
+        return date(int((year or "").strip()), month, day)
+    if re.fullmatch(r"\d{4}/\d{1,2}/\d{1,2}", text):
+        return date(*map(int, text.split("/")))
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}(?:[ T].+)?", text):
+        return datetime.fromisoformat(text).date()
+    if re.fullmatch(r"\d+(?:\.\d+)?", text):
+        serial_day = int(text.split(".", 1)[0])
+        if serial_day < 1 or serial_day == 60:
+            raise ValueError("无效 Excel 日期序号（序号 60 对应不存在的 1900-02-29）")
+        origin = date(1899, 12, 31) if serial_day < 60 else date(1899, 12, 30)
+        try:
+            return origin + timedelta(days=serial_day)
+        except OverflowError as exc:
+            raise ValueError("Excel 日期序号超出真实日期范围") from exc
+    raise ValueError(f"不支持的日期格式: {text!r}")
+
+
 def normalize_platform(p):
     if not p:
         return "Unknown"
@@ -81,10 +107,26 @@ def calc_delta(curr, prev):
 def main():
     raw_path = resolve_raw_file()
     rows = []
-    with raw_path.open("r", encoding="utf-8-sig", errors="replace") as f:
+    source_row_count = 0
+    date_parse_error_count = 0
+    nonzero_date_error_count = 0
+    date_error_examples = []
+    with raw_path.open("r", encoding="utf-8-sig", errors="replace", newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            source_row_count += 1
             qty = parse_qty(row.get("销量"))
+            try:
+                shipment_date = parse_shipment_date(row.get("日期"), row.get("年份"))
+            except ValueError as exc:
+                date_parse_error_count += 1
+                nonzero_date_error_count += qty != 0
+                if len(date_error_examples) < 5:
+                    date_error_examples.append(
+                        f"CSV 行 {reader.line_num}: 日期={row.get('日期')!r}, "
+                        f"年份={row.get('年份')!r}, 销量={qty}, 原因={exc}"
+                    )
+                continue
             if qty == 0:
                 continue
             platform = normalize_platform(row.get("Platform", ""))
@@ -92,35 +134,26 @@ def main():
                 continue
             category = normalize_category(row.get("品类", ""))
 
-            year_str = (row.get("年份") or "").strip()
-            month_str = (row.get("月份") or "").strip()
-            ym = ""
-            if year_str and month_str:
-                try:
-                    ym = f"{int(year_str)}-{int(month_str):02d}"
-                except ValueError:
-                    ym = ""
-
-            day = 0
-            date_str = (row.get("日期") or "").strip()
-            if date_str:
-                parts = date_str.split("/")
-                if len(parts) >= 2:
-                    try:
-                        day = int(parts[-1])
-                    except ValueError:
-                        day = 0
-
             rows.append({
                 "qty": qty,
                 "platform": platform,
                 "category": category,
-                "ym": ym,
-                "day": day,
+                "date": shipment_date.isoformat(),
+                "ym": f"{shipment_date.year:04d}-{shipment_date.month:02d}",
+                "day": shipment_date.day,
                 "sku": (row.get("SKU") or "").strip(),
                 "name": (row.get("产品名") or "").strip(),
             })
 
+    print(f"Source: {raw_path}")
+    print(f"Source rows: {source_row_count}; date parse errors: {date_parse_error_count}; "
+          f"nonzero date errors: {nonzero_date_error_count}")
+    for example in date_error_examples:
+        print(example)
+    if nonzero_date_error_count:
+        raise SystemExit(
+            f"{nonzero_date_error_count} 行非零出货量缺少有效日期，已停止生成，未写入输出。"
+        )
     print(f"Total rows parsed: {len(rows)}")
 
     all_yms = sorted(set(r["ym"] for r in rows if r["ym"]))
@@ -277,7 +310,34 @@ def main():
             "delta": calc_delta(curr["total"], prev["total"]),
         })
 
+    catalog_keys = sorted({(r["sku"], r["name"], r["category"]) for r in rows})
+    catalog = [
+        {"sku": sku, "name": name, "category": category}
+        for sku, name, category in catalog_keys
+    ]
+    catalog_index = {key: index for index, key in enumerate(catalog_keys)}
+    platform_index = {platform: index for index, platform in enumerate(PLATFORMS)}
+    daily_record_acc = defaultdict(lambda: [0, 0, 0])
+    for r in rows:
+        index = catalog_index[(r["sku"], r["name"], r["category"])]
+        daily_record_acc[(r["date"], index)][platform_index[r["platform"]]] += r["qty"]
+    daily_records = [
+        [iso_date, index, *quantities]
+        for (iso_date, index), quantities in sorted(daily_record_acc.items())
+    ]
+    available_range = {
+        "start": daily_records[0][0] if daily_records else None,
+        "end": daily_records[-1][0] if daily_records else None,
+    }
+
     output = {
+        "schema_version": 2,
+        "catalog": catalog,
+        "daily_records": daily_records,
+        "available_range": available_range,
+        "source_row_count": source_row_count,
+        "record_count": len(daily_records),
+        "date_parse_error_count": date_parse_error_count,
         "channel_cards": channel_cards,
         "category_table": category_table,
         "monthly_trend": monthly_trend,
@@ -293,6 +353,9 @@ def main():
         json.dump(output, f, ensure_ascii=False, separators=(",", ":"))
 
     print(f"Output written to {OUTPUT_FILE}")
+    print(f"Output size: {OUTPUT_FILE.stat().st_size} bytes; "
+          f"catalog entries: {len(catalog)}; daily records: {len(daily_records)}")
+    print(f"Available range: {available_range['start']} ~ {available_range['end']}")
     print(f"Current month {current_ym}: total={current_summary['total']}, "
           f"TT={current_summary['tiktok']}, SP={current_summary['shopee']}, "
           f"LZ={current_summary['lazada']}")

@@ -8,10 +8,8 @@ set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PROJECT_NAME="${CLOUDFLARE_PAGES_PROJECT:-ph-shopee-dashboard-wting}"
-STAGING_DIR="${TMPDIR:-/tmp}/ph-shopee-pages-staging"
-
-rm -rf "$STAGING_DIR"
-mkdir -p "$STAGING_DIR"
+STAGING_PARENT="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
+STAGING_DIR="$(mktemp -d "$STAGING_PARENT/ph-shopee-pages.XXXXXX")"
 
 # Copy the published site.
 cp "$PROJECT_DIR/index.html" "$STAGING_DIR/index.html"
