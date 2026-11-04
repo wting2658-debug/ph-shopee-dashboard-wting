@@ -62,6 +62,18 @@ CSS = """
     #shipment-page .shipment-dim-switch button.is-active { background: #2787e7; color: #fff; }
     #shipment-page #shipment-sku-table { min-width: 1680px; }
     #shipment-page #shipment-sku-table td.shipment-change { font-weight: 700; }
+    #shipment-page .shipment-channel-tiktok { background: #fff3ef !important; }
+    #shipment-page .shipment-channel-shopee { background: #eef6ff !important; }
+    #shipment-page .shipment-channel-lazada { background: #fff8e8 !important; }
+    #shipment-page .shipment-table th.shipment-channel-tiktok { color: #c83d2c; }
+    #shipment-page .shipment-table th.shipment-channel-shopee { color: #1769aa; }
+    #shipment-page .shipment-table th.shipment-channel-lazada { color: #a66b08; }
+    #shipment-page .shipment-table td.shipment-channel-tiktok:first-of-type, #shipment-page .shipment-table th.shipment-channel-tiktok:first-of-type { border-left: 2px solid #f5c9bf; }
+    #shipment-page .shipment-table td.shipment-channel-tiktok:last-of-type, #shipment-page .shipment-table th.shipment-channel-tiktok:last-of-type { border-right: 2px solid #f5c9bf; }
+    #shipment-page .shipment-table td.shipment-channel-shopee:first-of-type, #shipment-page .shipment-table th.shipment-channel-shopee:first-of-type { border-left: 2px solid #c5ddf5; }
+    #shipment-page .shipment-table td.shipment-channel-shopee:last-of-type, #shipment-page .shipment-table th.shipment-channel-shopee:last-of-type { border-right: 2px solid #c5ddf5; }
+    #shipment-page .shipment-table td.shipment-channel-lazada:first-of-type, #shipment-page .shipment-table th.shipment-channel-lazada:first-of-type { border-left: 2px solid #f1ddb1; }
+    #shipment-page .shipment-table td.shipment-channel-lazada:last-of-type, #shipment-page .shipment-table th.shipment-channel-lazada:last-of-type { border-right: 2px solid #f1ddb1; }
     #shipment-page .shipment-monthly-controls select { padding: 9px 12px; border: 1px solid #ccd9e7; border-radius: 8px; background: #fff; color: #263a53; font-size: 15px; max-width: 100%; width: 380px; }
     #shipment-page .shipment-monthly-controls input { max-width: 100%; }
     #shipment-page #shipment-monthly-table { min-width: 720px; }
@@ -82,7 +94,7 @@ HTML = """    <main class="dashboard-page" id="shipment-page" hidden>
         <div class="shipment-metrics-grid" id="shipment-metrics-grid"></div>
       </section>
       <section class="panel" id="shipment-daily-section" style="margin-top:18px;">
-        <div class="panel-head"><div><h2 class="panel-title">日趋势 · TT / 虾皮 / Lazada</h2><div class="panel-subtitle" id="shipment-daily-subtitle">查询日期段内每日出货量，支持品类与产品筛选。</div></div></div>
+        <div class="panel-head"><div><h2 class="panel-title">日趋势 · TT / 虾皮 / Lazada</h2><div class="panel-subtitle" id="shipment-daily-subtitle">实线为查询期，虚线为对应对比期；按日期序号对齐，悬浮可查看两期日期与出货量。</div></div></div>
         <div class="shipment-tri-chart">
           <div class="panel"><h3 style="font-size:16px;margin-bottom:10px;color:#ee4d2d;">TT销量日趋势</h3><div class="chart-wrap-inner"><canvas id="chart-shipment-daily-tiktok"></canvas></div></div>
           <div class="panel"><h3 style="font-size:16px;margin-bottom:10px;color:#2787e7;">虾皮销量日趋势</h3><div class="chart-wrap-inner"><canvas id="chart-shipment-daily-shopee"></canvas></div></div>
@@ -210,10 +222,13 @@ JS = """
       const groups = shipmentGroupRows(shipmentBaseRows(false), 'category');
       const total = groups.reduce((sum, g) => sum + g.total, 0);
       const headers = ['品类','总量','占比','环比','Tiktok','TT占比','TT环比','Shopee','SP占比','SP环比','Lazada','LZ占比','LZ环比'];
-      const head = '<thead><tr>' + headers.map((h,i) => `<th${i === 0 ? ' class="shipment-text"' : ''}>${h}</th>`).join('') + '</tr></thead>';
+      const head = '<thead><tr>' + headers.map((h,i) => {
+        const channel = i >= 4 && i <= 6 ? 'tiktok' : i >= 7 && i <= 9 ? 'shopee' : i >= 10 ? 'lazada' : '';
+        return `<th${i === 0 ? ' class="shipment-text' + (channel ? ' shipment-channel-' + channel : '') + '"' : channel ? ` class="shipment-channel-${channel}"` : ''}>${h}</th>`;
+      }).join('') + '</tr></thead>';
       const body = groups.map(g => {
         const active = SHIPMENT_STATE.category === g.key;
-        const channels = SHIPMENT_CHANNELS.map(ch => `<td>${formatShipmentNumber(g[ch])}</td><td>${(g.total ? g[ch] / g.total * 100 : 0).toFixed(1)}%</td><td>${formatShipmentDelta(shipmentDelta(g[ch], g['prev_' + ch]))}</td>`).join('');
+        const channels = SHIPMENT_CHANNELS.map(ch => `<td class="shipment-channel-${ch}">${formatShipmentNumber(g[ch])}</td><td class="shipment-channel-${ch}">${(g.total ? g[ch] / g.total * 100 : 0).toFixed(1)}%</td><td class="shipment-channel-${ch}">${formatShipmentDelta(shipmentDelta(g[ch], g['prev_' + ch]))}</td>`).join('');
         return `<tr${active ? ' class="is-selected"' : ''}><td class="shipment-text"><button type="button" class="shipment-cat-btn${active ? ' is-active' : ''}" data-shipment-category="${shipmentEscape(g.key)}">${shipmentEscape(g.key)}</button></td><td class="shipment-total">${formatShipmentNumber(g.total)}</td><td>${(total ? g.total / total * 100 : 0).toFixed(1)}%</td><td>${formatShipmentDelta(shipmentDelta(g.total,g.prev_total))}</td>${channels}</tr>`;
       }).join('');
       document.getElementById('shipment-category-table').innerHTML = shipmentCols([10,9,6,8,8,6,8,8,6,8,8,6,9]) + head + '<tbody>' + (body || '<tr><td colspan="13" class="shipment-empty">所选日期段没有出货记录</td></tr>') + '</tbody>';
@@ -222,22 +237,38 @@ JS = """
       if (state.charts[canvasId]) state.charts[canvasId].destroy();
       state.charts[canvasId] = new Chart(document.getElementById(canvasId), { type, data: { labels, datasets }, options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top', labels: { color: '#44617f', font: { size: 13, weight: '700' } } }, tooltip: { callbacks: { label: ctx => ctx.parsed.y === null ? ctx.dataset.label + ': 未到数' : ctx.dataset.label + ': ' + formatShipmentNumber(ctx.parsed.y) + ' 件' } } },
+        plugins: { legend: { position: 'top', labels: { color: '#44617f', font: { size: 13, weight: '700' } } }, tooltip: { callbacks: {
+          title: items => { const ctx = items[0]; return ctx?.dataset?.dateLabels?.[ctx.dataIndex] || ctx?.label || ''; },
+          label: ctx => ctx.parsed.y === null ? ctx.dataset.label + ': 未到数' : ctx.dataset.label + ': ' + formatShipmentNumber(ctx.parsed.y) + ' 件'
+        } } },
         scales: { x: { ticks: { color: '#52657c', font: { size: 12 }, maxTicksLimit: 16 }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#52657c', callback: v => formatShipmentNumber(v) }, grid: { color: '#e6edf5' } } }
       } });
     }
-    function renderShipmentDailyCharts() {
-      const rows = shipmentSelectedRecords(shipmentPeriodData().current), daily = new Map();
-      // Keep every selected date on the axis. A date absent from the source is unknown, not a fabricated zero.
-      const start = new Date(state.start + 'T00:00:00Z'), end = new Date(state.end + 'T00:00:00Z');
-      for (let d = start; d <= end; d = new Date(d.getTime() + 86400000)) {
-        const date = d.toISOString().slice(0,10);
-        daily.set(date, SHIPMENT_RECORD_DATES.has(date) ? [0,0,0] : [null,null,null]);
+    function shipmentDateList(startText, endText) {
+      const dates = [], start = new Date(startText + 'T00:00:00Z'), end = new Date(endText + 'T00:00:00Z');
+      for (let d = start; d <= end; d = new Date(d.getTime() + 86400000)) dates.push(d.toISOString().slice(0,10));
+      return dates;
+    }
+    function shipmentDailyValues(dates, records) {
+      const daily = new Map(dates.map(date => [date, SHIPMENT_RECORD_DATES.has(date) ? [0,0,0] : [null,null,null]]));
+      for (const r of records) {
+        if (!daily.has(r[0]) || daily.get(r[0])[0] === null) daily.set(r[0], [0,0,0]);
+        r.slice(2,5).forEach((q,i) => daily.get(r[0])[i] += q);
       }
-      for (const r of rows) { if (!daily.has(r[0]) || daily.get(r[0])[0] === null) daily.set(r[0], [0,0,0]); r.slice(2,5).forEach((q,i) => daily.get(r[0])[i] += q); }
-      const dates = Array.from(daily.keys()).sort();
-      document.getElementById('shipment-daily-subtitle').textContent = `查询期 ${state.start} ~ ${state.end} 每日出货量；随上方品类 / 产品筛选联动。悬浮圆点查看日期与具体出货件数，无源记录日期留空、不补零。`;
-      [['tiktok','TT','#ee4d2d'],['shopee','虾皮','#2787e7'],['lazada','Lazada','#f5a623']].forEach(([key,label,color],i) => shipmentChart('chart-shipment-daily-' + key, 'line', dates, [{ label, data: dates.map(d => daily.get(d)[i]), borderColor: color, backgroundColor: color, borderWidth: 2.5, tension: .28, pointRadius: 4, pointHoverRadius: 7, pointHitRadius: 14, pointBorderColor: '#fff', pointBorderWidth: 1.5, fill: false, spanGaps: false }]));
+      return dates.map(date => daily.get(date));
+    }
+    function renderShipmentDailyCharts() {
+      const period = shipmentPeriodData();
+      const currentDates = shipmentDateList(state.start, state.end), compareDates = shipmentDateList(state.compareStart, state.compareEnd);
+      const currentValues = shipmentDailyValues(currentDates, shipmentSelectedRecords(period.current));
+      const compareValues = shipmentDailyValues(compareDates, shipmentSelectedRecords(period.compare));
+      const pointCount = Math.max(currentDates.length, compareDates.length), labels = Array.from({ length: pointCount }, (_, i) => currentDates[i] || `第${i + 1}天`);
+      document.getElementById('shipment-daily-subtitle').textContent = `实线为查询期 ${state.start} ~ ${state.end}，虚线为对比期 ${state.compareStart} ~ ${state.compareEnd}；按日期序号对齐，随上方品类 / 产品筛选联动。悬浮查看对应日期与出货件数，无源记录日期留空。`;
+      [['tiktok','TT','#ee4d2d'],['shopee','虾皮','#2787e7'],['lazada','Lazada','#f5a623']].forEach(([key,label,color],i) => {
+        const current = { label: `${label} 查询期`, data: Array.from({ length: pointCount }, (_, n) => currentValues[n]?.[i] ?? null), dateLabels: Array.from({ length: pointCount }, (_, n) => currentDates[n] || `查询期第${n + 1}天`), borderColor: color, backgroundColor: color, borderWidth: 2.5, tension: .28, pointRadius: 4, pointHoverRadius: 7, pointHitRadius: 14, pointBorderColor: '#fff', pointBorderWidth: 1.5, fill: false, spanGaps: false };
+        const compare = { label: `${label} 对比期`, data: Array.from({ length: pointCount }, (_, n) => compareValues[n]?.[i] ?? null), dateLabels: Array.from({ length: pointCount }, (_, n) => compareDates[n] || `对比期第${n + 1}天`), borderColor: color, backgroundColor: color, borderWidth: 2, borderDash: [7, 5], tension: .28, pointRadius: 3, pointHoverRadius: 6, pointHitRadius: 14, pointBorderColor: '#fff', pointBorderWidth: 1.5, fill: false, spanGaps: false };
+        shipmentChart('chart-shipment-daily-' + key, 'line', labels, [current, compare]);
+      });
     }
     function shipmentMonthlyKey(product, dim) { return dim === 'name' ? (product.name || product.sku) : product[dim]; }
     function shipmentMonthlyData() {
@@ -312,8 +343,12 @@ JS = """
       document.getElementById('shipment-detail-title').textContent = `出货明细 · 按${dimLabel}汇总`;
       document.getElementById('shipment-detail-subtitle').textContent = `查询期 ${state.start} ~ ${state.end} / 对比期 ${state.compareStart} ~ ${state.compareEnd} · 共 ${groups.length} 条（含仅对比期出货产品）。增减列为查询期 − 对比期的件数（非百分比），悬浮可查看两期数量。`;
       const textHeaders = dim === 'sku' ? ['SKU货号','产品名','品类'] : dim === 'category' ? ['品类'] : ['产品名','品类'];
-      const headers = [...textHeaders,'总量','总量增减', ...(dim === 'sku' ? [] : ['占比']), 'TT出货量','TT增减','虾皮出货量','SP增减','Lazada出货量','LZ增减','对比期总量'];
-      const head = '<thead><tr>' + headers.map((h,i) => `<th${i < textHeaders.length ? ' class="shipment-text"' : ''}${h.includes('增减') ? ' title="增减量 = 查询期出货量 − 顶部所选对比期出货量，单位：件"' : ''}>${h}</th>`).join('') + '</tr></thead>';
+      const headers = [...textHeaders,'总量','总量增减','对比期总量', ...(dim === 'sku' ? [] : ['占比']), 'TT出货量','TT增减','虾皮出货量','SP增减','Lazada出货量','LZ增减'];
+      const head = '<thead><tr>' + headers.map((h,i) => {
+        const channel = h.startsWith('TT') ? 'tiktok' : h.startsWith('虾皮') || h.startsWith('SP') ? 'shopee' : h.startsWith('Lazada') || h.startsWith('LZ') ? 'lazada' : '';
+        const classes = [i < textHeaders.length ? 'shipment-text' : '', channel ? 'shipment-channel-' + channel : ''].filter(Boolean).join(' ');
+        return `<th${classes ? ` class="${classes}"` : ''}${h.includes('增减') ? ' title="增减量 = 查询期出货量 − 顶部所选对比期出货量，单位：件"' : ''}>${h}</th>`;
+      }).join('') + '</tr></thead>';
       const body = groups.map(g => {
         let prefix;
         if (dim === 'sku') prefix = `<td class="shipment-text">${shipmentEscape(g.key)}</td><td class="shipment-text"><button type="button" class="shipment-product-btn" data-shipment-product="${shipmentEscape(g.key)}" data-product-dim="sku">${shipmentEscape(g.name || g.key)}</button></td><td class="shipment-text">${shipmentEscape(g.category)}</td>`;
@@ -321,13 +356,13 @@ JS = """
           const label = dim === 'category' ? `<button type="button" class="shipment-cat-btn${SHIPMENT_STATE.category === g.key ? ' is-active' : ''}" data-shipment-category="${shipmentEscape(g.key)}">${shipmentEscape(g.key)}</button>` : `<button type="button" class="shipment-product-btn" data-shipment-product="${shipmentEscape(g.key)}" data-product-dim="name">${shipmentEscape(g.key)}</button>`;
           prefix = `<td class="shipment-text">${label}</td>` + (dim === 'name' ? `<td class="shipment-text">${shipmentEscape(g.category)}</td>` : '');
         }
-        const quantity = `<td class="shipment-total">${formatShipmentNumber(g.total)}</td><td class="shipment-change">${formatShipmentChange(g.total,g.prev_total)}</td>`;
+        const quantity = `<td class="shipment-total">${formatShipmentNumber(g.total)}</td><td class="shipment-change">${formatShipmentChange(g.total,g.prev_total)}</td><td class="shipment-compare">${formatShipmentNumber(g.prev_total)}</td>`;
         const share = dim === 'sku' ? '' : `<td>${(total ? g.total / total * 100 : 0).toFixed(1)}%</td>`;
-        const channels = SHIPMENT_CHANNELS.map(ch => `<td>${formatShipmentNumber(g[ch])}</td><td class="shipment-change">${formatShipmentChange(g[ch],g['prev_' + ch])}</td>`).join('');
-        return `<tr>${prefix}${quantity}${share}${channels}<td class="shipment-compare">${formatShipmentNumber(g.prev_total)}</td></tr>`;
+        const channels = SHIPMENT_CHANNELS.map(ch => `<td class="shipment-channel-${ch}">${formatShipmentNumber(g[ch])}</td><td class="shipment-channel-${ch} shipment-change">${formatShipmentChange(g[ch],g['prev_' + ch])}</td>`).join('');
+        return `<tr>${prefix}${quantity}${share}${channels}</tr>`;
       }).join('');
       const textWidths = dim === 'sku' ? [210,280,100] : dim === 'name' ? [280,100] : [180];
-      const widths = [...textWidths,110,115, ...(dim === 'sku' ? [] : [90]), 110,115,110,115,140,115,140];
+      const widths = [...textWidths,110,115,140, ...(dim === 'sku' ? [] : [90]), 110,115,110,115,140,115];
       const table = document.getElementById('shipment-sku-table');
       table.style.minWidth = widths.reduce((sum,w) => sum + w, 0) + 'px';
       const cols = '<colgroup>' + widths.map(w => `<col style="width:${w}px">`).join('') + '</colgroup>';
