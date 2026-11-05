@@ -1182,7 +1182,13 @@
     #subsidy-page .subsidy-legend { display: flex; flex-wrap: wrap; gap: 18px; color: #697d91; font-size: 13px; }
     #subsidy-page .subsidy-legend i { display: inline-block; width: 25px; border-top: 3px solid #f47a2a; vertical-align: middle; margin-right: 7px; }
     #subsidy-page .subsidy-legend i.dashed { border-color: #91a6c1; border-top-style: dashed; }
-    #subsidy-page #subsidy-monthly-table { min-width: 2020px; }
+    #subsidy-page .subsidy-monthly-table-wrap { overflow: visible; max-height: none; }
+    #subsidy-page #subsidy-monthly-table { min-width: 0; width: 100%; font-size: 13px; }
+    #subsidy-page #subsidy-monthly-table th, #subsidy-page #subsidy-monthly-table td { font-size: 13px; padding: 10px 7px; white-space: normal; line-height: 1.35; overflow-wrap: anywhere; }
+    #subsidy-page #subsidy-monthly-table th { font-size: 13px; padding: 11px 7px; }
+    #subsidy-page #subsidy-monthly-table .subsidy-bar { gap: 5px; }
+    #subsidy-page #subsidy-monthly-table .subsidy-bar-track { width: 34px; height: 12px; }
+    #subsidy-page #subsidy-monthly-table .subsidy-partial { font-size: 11px; padding: 1px 3px; margin-left: 3px; }
     #subsidy-page #subsidy-monthly-table th { background: #4bb2dc; }
     #subsidy-page #subsidy-monthly-table th.subsidy-tt { background: #429cbb; }
     #subsidy-page #subsidy-monthly-table th.subsidy-sp { background: #e69739; }
@@ -1317,11 +1323,11 @@
         </div>
       </div>
       <div class="dashboard-tabs" aria-label="看板分页">
+        <button class="dashboard-tab" type="button" data-dashboard-page="subsidy">渠道补贴&amp;趋势</button>
         <button class="dashboard-tab active" type="button" data-dashboard-page="store">店铺分析</button>
         <button class="dashboard-tab" type="button" data-dashboard-page="meta">站外投放</button>
         <button class="dashboard-tab" type="button" data-dashboard-page="onsite">站内投放</button>
         <button class="dashboard-tab" type="button" data-dashboard-page="shipment">出货分析</button>
-        <button class="dashboard-tab" type="button" data-dashboard-page="subsidy">补贴&amp;趋势</button>
       </div>
       <div class="dashboard-controls">
         <div class="date-grid">
@@ -1693,7 +1699,7 @@
       </section>
       <section class="subsidy-panel">
         <div class="subsidy-head"><div><h2>月度补贴明细</h2><div class="subsidy-note">全渠道 = TT + Shopee + Lazada；货架 = Shopee + Lazada。独立展示全历史月份，不受顶部日期筛选影响；表格最新月份置顶。</div></div></div>
-        <div class="subsidy-table-wrap"><table class="subsidy-table" id="subsidy-monthly-table"></table></div>
+        <div class="subsidy-table-wrap subsidy-monthly-table-wrap"><table class="subsidy-table" id="subsidy-monthly-table"></table></div>
         <div class="subsidy-note subsidy-source" id="subsidy-monthly-source"></div>
       </section>
       <section class="subsidy-panel" id="subsidy-monthly-trends">
@@ -4622,7 +4628,7 @@
       const totalMax = Math.max(1,...rows.map(r => r.total ?? 0)), shelfMax = Math.max(1,...rows.map(r => r.shelf ?? 0));
       const amount = value => `<td title="${subsidyNumber(value)} 元">${subsidyWan(value)}</td>`;
       const channelAmount = (value,cl) => `<td class="${cl}" title="${subsidyNumber(value)} 元">${subsidyWan(value)}</td>`;
-      document.getElementById('subsidy-monthly-table').innerHTML = '<colgroup><col style="width:96px"><col style="width:150px"><col style="width:80px"><col style="width:102px"><col style="width:190px"><col style="width:140px"><col style="width:130px"><col style="width:148px"><col style="width:190px"><col style="width:132px"><col style="width:140px"><col style="width:130px"><col style="width:148px"><col style="width:144px"></colgroup><thead><tr><th class="subsidy-text">Country</th><th class="subsidy-text">Brand</th><th>年</th><th>月</th><th>全渠道</th><th class="subsidy-tt">TT-GMV</th><th class="subsidy-tt">TT-补贴</th><th class="subsidy-tt">TT补贴占比</th><th>货架合计</th><th>货架占比</th><th class="subsidy-sp">① SP-GMV</th><th class="subsidy-sp">SP-补贴</th><th class="subsidy-sp">SP补贴占比</th><th>② LZD-GMV</th></tr></thead><tbody>' + [...rows].reverse().map(r => `<tr><td class="subsidy-text">${subsidyText(r.country)}</td><td class="subsidy-text">${subsidyText(r.brand)}</td><td>${r.year}</td><td>${r.month_number}${subsidyMonthBadge(r.month)}</td><td>${subsidyBar(r.total,totalMax,'#4bb2dc')}</td>${channelAmount(r.tt_gmv,'subsidy-tt')}${channelAmount(r.tt_subsidy,'subsidy-tt')}<td class="subsidy-tt">${subsidyPercent(r.tt_rate)}</td><td>${subsidyBar(r.shelf,shelfMax,'#ee9731')}</td><td>${subsidyPercent(r.shelf_share)}</td>${channelAmount(r.sp_gmv,'subsidy-sp')}${channelAmount(r.sp_subsidy,'subsidy-sp')}<td class="subsidy-sp">${subsidyPercent(r.sp_rate)}</td>${amount(r.lz_gmv)}</tr>`).join('') + '</tbody>';
+      document.getElementById('subsidy-monthly-table').innerHTML = '<colgroup><col style="width:6%"><col style="width:8%"><col style="width:4%"><col style="width:4%"><col style="width:11%"><col style="width:8%"><col style="width:7%"><col style="width:7%"><col style="width:11%"><col style="width:7%"><col style="width:8%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup><thead><tr><th class="subsidy-text">Country</th><th class="subsidy-text">Brand</th><th>年</th><th>月</th><th>全渠道</th><th class="subsidy-tt">TT-GMV</th><th class="subsidy-tt">TT-补贴</th><th class="subsidy-tt">TT补贴占比</th><th>货架合计</th><th>货架占比</th><th class="subsidy-sp">① SP-GMV</th><th class="subsidy-sp">SP-补贴</th><th class="subsidy-sp">SP补贴占比</th><th>② LZD-GMV</th></tr></thead><tbody>' + [...rows].reverse().map(r => `<tr><td class="subsidy-text">${subsidyText(r.country)}</td><td class="subsidy-text">${subsidyText(r.brand)}</td><td>${r.year}</td><td>${r.month_number}${subsidyMonthBadge(r.month)}</td><td>${subsidyBar(r.total,totalMax,'#4bb2dc')}</td>${channelAmount(r.tt_gmv,'subsidy-tt')}${channelAmount(r.tt_subsidy,'subsidy-tt')}<td class="subsidy-tt">${subsidyPercent(r.tt_rate)}</td><td>${subsidyBar(r.shelf,shelfMax,'#ee9731')}</td><td>${subsidyPercent(r.shelf_share)}</td>${channelAmount(r.sp_gmv,'subsidy-sp')}${channelAmount(r.sp_subsidy,'subsidy-sp')}<td class="subsidy-sp">${subsidyPercent(r.sp_rate)}</td>${amount(r.lz_gmv)}</tr>`).join('') + '</tbody>';
       document.getElementById('subsidy-monthly-source').innerHTML = `数据源：<a href="${subsidyText(SUBSIDY_DATA.sources.monthly)}" target="_blank" rel="noopener">月度补贴工作表</a> · 金额单位：人民币，按截图以“万”展示，悬停查看完整元数；最新累计月份 ${SUBSIDY_DATA.coverage.latest_month}，月度源未提供独立截止日，不据日源日期推定已完月。月度曲线按时间正序、表格按月份倒序；保留 Lazada GMV，不展示 Lazada 补贴。`;
     }
     function renderSubsidyPage() { renderSubsidySales(); renderSubsidyDaily(); renderSubsidyRollup(); renderSubsidyMonthly(); }
