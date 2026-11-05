@@ -415,7 +415,8 @@ def replace_span(text, start_marker, end_marker, new_block):
 def update_template(text):
     text = replace_span(text, "    /* ===== Shipment Page ===== */", "\n  </style>", CSS.lstrip("\n"))
     text = re.sub(r"(?:\s*</style>){2,}", "\n  </style>", text)
-    text = replace_span(text, '    <main class="dashboard-page" id="shipment-page" hidden>', "\n  <script>", HTML.rstrip() + "\n\n")
+    html_end = '\n    <!-- ===== Subsidy Page ===== -->' if '<!-- ===== Subsidy Page ===== -->' in text else '\n  <script>'
+    text = replace_span(text, '    <main class="dashboard-page" id="shipment-page" hidden>', html_end, HTML.rstrip() + "\n\n")
     # Remove the shared date-control dimension row entirely from all four pages.
     text = re.sub(r'        <div class="shipment-dim-row" id="shipment-dim-row" hidden>.*?\n        </div>\n', '', text, count=1, flags=re.S)
     text = replace_span(text, "    // ===== Shipment Page Rendering =====", "    syncDateInputs();", JS.lstrip("\n"))

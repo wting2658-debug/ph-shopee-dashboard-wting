@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import shutil
 from pathlib import Path
 from urllib.request import Request, urlopen
@@ -15,9 +16,14 @@ SOURCES = [
     ("Raw_data", "1292217820", "raw_data_sheet_1292217820.csv", "广告名称,广告组名称"),
 ]
 SHIPMENT_SOURCE = ("出货数据源", "374772985", "shipment_raw.csv", "SKU,产品名")
+SUBSIDY_SOURCES = [
+    ("销售概览", "950073536", "subsidy_sales.csv", "", ("Country", "Brand", "Platform")),
+    ("补贴日趋势", "1324626803", "subsidy_daily.csv", "", ("年", "日", "TT-GMV", "SP-GMV")),
+    ("补贴月度趋势", "2029376544", "subsidy_monthly.csv", "", ("年", "月", "TT-GMV", "①SP-GMV")),
+]
 
 
-def download_source(name: str, gid: str, filename: str, header_prefix: str, sheet_id: str = SHEET_ID) -> None:
+def download_source(name: str, gid: str, filename: str, header_prefix: str, sheet_id: str = SHEET_ID, required_headers: tuple[str, ...] = ()) -> None:
     destination = DATA_DIR / filename
     temporary = destination.with_suffix(f"{destination.suffix}.tmp")
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
@@ -30,7 +36,8 @@ def download_source(name: str, gid: str, filename: str, header_prefix: str, shee
 
     with temporary.open("r", encoding="utf-8-sig", errors="replace") as source:
         first_line = source.readline().strip()
-    if not first_line.startswith(header_prefix):
+    parsed_header = next(csv.reader([first_line]))
+    if not first_line.startswith(header_prefix) or any(field not in parsed_header for field in required_headers):
         temporary.unlink(missing_ok=True)
         raise RuntimeError(f"{name} 表头不符合预期：{first_line[:120]}")
 
@@ -44,6 +51,8 @@ def main() -> None:
         download_source(*source)
     # Download shipment data from separate sheet
     download_source(*SHIPMENT_SOURCE, sheet_id=SHIPMENT_SHEET_ID)
+    for name, gid, filename, prefix, headers in SUBSIDY_SOURCES:
+        download_source(name, gid, filename, prefix, sheet_id=SHIPMENT_SHEET_ID, required_headers=headers)
 
 
 if __name__ == "__main__":
