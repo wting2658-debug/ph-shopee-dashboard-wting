@@ -31,12 +31,12 @@
 #live-page .live-track { position:relative; height:32px; border-radius:6px; background:repeating-linear-gradient(to right,#f0f5fa 0,#f0f5fa calc(25% - 1px),#dce7f2 calc(25% - 1px),#dce7f2 25%); }
 #live-page .live-bar { position:absolute; top:4px; height:24px; min-width:3px; border-radius:5px; background:#2787a0; }
 #live-page .live-table-wrap { overflow:auto; max-height:600px; border:1px solid #e2e9f1; border-radius:10px; }
-#live-page .live-table { width:100%; min-width:1440px; border-collapse:separate; border-spacing:0; font-size:17px; line-height:1.6; font-variant-numeric:tabular-nums; }
+#live-page .live-table { width:100%; min-width:1440px; border-collapse:separate; border-spacing:0; font-size:25px; line-height:1.6; font-variant-numeric:tabular-nums; }
 #live-page .live-table th, #live-page .live-table td { padding:18px 16px; text-align:right; white-space:nowrap; border-bottom:1px solid #e5ebf2; }
-#live-page .live-table th { position:sticky; top:0; background:#f2f6fb; color:#334d69; z-index:1; }
+#live-page .live-table th { position:sticky; top:0; font-size:30px; background:#f2f6fb; color:#334d69; z-index:1; }
 #live-page .live-table th:first-child, #live-page .live-table td:first-child { text-align:left; }
 #live-page .live-table tbody tr:nth-child(even) { background:#fafcfe; }
-#live-page .live-table small { display:block; font-size:14px; color:#667c93; margin-top:6px; }
+#live-page .live-table small { display:block; font-size:25px; color:#667c93; margin-top:6px; }
 #live-page .live-empty { padding:30px; text-align:center; color:#667c93; }
 #live-page .live-warning { color:#94641c; background:#fff8e8; padding:12px 16px; border-radius:10px; margin-bottom:16px; font-size:13px; line-height:1.8; }
 @media(min-width:1600px) { #live-page .live-kpis { grid-template-columns:repeat(6,minmax(0,1fr)); } }
