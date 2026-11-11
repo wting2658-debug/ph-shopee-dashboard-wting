@@ -17,7 +17,7 @@ const LIVE_DETAIL_START = [LIVE_SHOP_START,LIVE_DATA.coverage.sessions_start].so
 const LIVE_DETAIL_END = [LIVE_SHOP_END,LIVE_DATA.coverage.sessions_end].sort().at(-1);
 const liveEscape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const liveNumber = (value, decimals = 0) => value == null || !Number.isFinite(value) ? '—' : Number(value).toLocaleString('zh-CN', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
-const liveMoney = value => value == null ? '—' : `¥${liveNumber(value, 2)}`;
+const liveMoney = value => value == null ? '—' : `¥${liveNumber(value)}`;
 const liveRate = value => value == null ? '—' : `${liveNumber(value * 100, 2)}%`;
 const liveRatio = (numerator, denominator) => numerator == null || denominator == null || denominator === 0 ? null : numerator / denominator;
 
