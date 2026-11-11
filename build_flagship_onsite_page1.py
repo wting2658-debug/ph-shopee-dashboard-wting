@@ -10,6 +10,7 @@ from typing import Any
 
 import pandas as pd
 from process_subsidy_data import load_subsidy_json
+from inject_live_page import inject_live_page
 
 
 SHEET_ID = "1I_Q-Rx6QklML2023EUG8U1hb4MPN8shyeTyShiXrcYY"
@@ -5568,7 +5569,7 @@ renderFilters();
     html = html.replace("__PAYLOAD_JSON__", payload_json)
     html = html.replace("__SHIPMENT_JSON__", load_shipment_json())
     html = html.replace("__SUBSIDY_JSON__", load_subsidy_json())
-    return html
+    return inject_live_page(html)
 
 
 def generate_report(

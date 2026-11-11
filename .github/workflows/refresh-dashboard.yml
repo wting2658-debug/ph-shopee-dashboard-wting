@@ -40,6 +40,9 @@ jobs:
       - name: Process subsidy data
         run: python process_subsidy_data.py
 
+      - name: Process livestream data
+        run: python process_live_data.py
+
       - name: Rebuild dashboard
         run: python build_flagship_onsite_page1.py
 
@@ -47,7 +50,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html shipment_data.json subsidy_data.json
+          git add index.html shipment_data.json subsidy_data.json live_data.json
           if git diff --cached --quiet; then
             echo "Dashboard is already up to date."
             exit 0

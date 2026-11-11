@@ -21,6 +21,10 @@ SUBSIDY_SOURCES = [
     ("补贴日趋势", "1324626803", "subsidy_daily.csv", "", ("年", "日", "TT-GMV", "SP-GMV")),
     ("补贴月度趋势", "2029376544", "subsidy_monthly.csv", "", ("年", "月", "TT-GMV", "①SP-GMV")),
 ]
+LIVE_SOURCES = [
+    ("直播店铺日数据", "498581239", "live_daily.csv", "Date,", ("Shop GMV",)),
+    ("直播场次明细", "1942385414", "live_sessions.csv", "Year,", ("Start Date", "Total Live Duration", "Likes", "Buyers", "Gross Sales(Local Currency)")),
+]
 
 
 def download_source(name: str, gid: str, filename: str, header_prefix: str, sheet_id: str = SHEET_ID, required_headers: tuple[str, ...] = ()) -> None:
@@ -52,6 +56,8 @@ def main() -> None:
     # Download shipment data from separate sheet
     download_source(*SHIPMENT_SOURCE, sheet_id=SHIPMENT_SHEET_ID)
     for name, gid, filename, prefix, headers in SUBSIDY_SOURCES:
+        download_source(name, gid, filename, prefix, sheet_id=SHIPMENT_SHEET_ID, required_headers=headers)
+    for name, gid, filename, prefix, headers in LIVE_SOURCES:
         download_source(name, gid, filename, prefix, sheet_id=SHIPMENT_SHEET_ID, required_headers=headers)
 
 
