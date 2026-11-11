@@ -1,13 +1,20 @@
-// Livestream rendering shares only the existing date state and chart helper.
+// Use the same unfiltered RMB product facts as the store overview.
 const LIVE_SHOP = new Map(LIVE_DATA.daily.map(row => [row.date, row]));
+const LIVE_STORE_GMV = new Map();
+for (const row of PAYLOAD.facts) {
+  const date = row[FACT.date];
+  LIVE_STORE_GMV.set(date, (LIVE_STORE_GMV.get(date) || 0) + row[FACT.gmv]);
+}
+const LIVE_SHOP_START = [LIVE_DATA.coverage.shop_start,PAYLOAD.available_range.start].sort()[0];
+const LIVE_SHOP_END = [LIVE_DATA.coverage.shop_end,PAYLOAD.available_range.end].sort().at(-1);
 const LIVE_DAYS = new Map();
 for (const session of LIVE_DATA.sessions) {
   if (!LIVE_DAYS.has(session.date)) LIVE_DAYS.set(session.date, []);
   LIVE_DAYS.get(session.date).push(session);
 }
 const LIVE_STATE = { date: null, compareMode: 'month' };
-const LIVE_DETAIL_START = [LIVE_DATA.coverage.shop_start,LIVE_DATA.coverage.sessions_start].sort()[0];
-const LIVE_DETAIL_END = [LIVE_DATA.coverage.shop_end,LIVE_DATA.coverage.sessions_end].sort().at(-1);
+const LIVE_DETAIL_START = [LIVE_SHOP_START,LIVE_DATA.coverage.sessions_start].sort()[0];
+const LIVE_DETAIL_END = [LIVE_SHOP_END,LIVE_DATA.coverage.sessions_end].sort().at(-1);
 const liveEscape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const liveNumber = (value, decimals = 0) => value == null || !Number.isFinite(value) ? '—' : Number(value).toLocaleString('zh-CN', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
 const liveMoney = value => value == null ? '—' : `¥${liveNumber(value, 2)}`;
@@ -25,7 +32,9 @@ function liveDates(start, end) {
 function liveDay(date) {
   const rows = LIVE_DAYS.get(date) || [];
   const inSessionCoverage = date >= LIVE_DATA.coverage.sessions_start && date <= LIVE_DATA.coverage.sessions_end;
-  const totals = {date, shop_gmv: LIVE_SHOP.get(date)?.shop_gmv ?? null, gmv: null, hours: null, likes: null, buyers: null, sessions: rows.length};
+  const inStoreCoverage = date >= PAYLOAD.available_range.start && date <= PAYLOAD.available_range.end;
+  const shopGmv = inStoreCoverage ? LIVE_STORE_GMV.get(date) ?? null : LIVE_SHOP.get(date)?.shop_gmv ?? null;
+  const totals = {date, shop_gmv: shopGmv, gmv: null, hours: null, likes: null, buyers: null, sessions: rows.length};
   if (inSessionCoverage) {
     for (const key of ['gmv','hours','likes','buyers']) totals[key] = rows.reduce((sum, row) => sum + row[key], 0);
   }
@@ -95,7 +104,7 @@ function renderLiveDay() {
   }
   input.value = LIVE_STATE.date;
   const day = liveDay(LIVE_STATE.date), sessions = LIVE_DAYS.get(LIVE_STATE.date) || [];
-  const kpis = [['直播场次', `${sessions.length} 场`], ['直播时长', day.hours == null ? '—' : `${liveNumber(day.hours,2)} 小时`], ['当日直播 GMV',liveMoney(day.gmv)], ['当日店铺 GMV',liveMoney(day.shop_gmv)], ['当日直播占比',liveRate(day.share)]];
+  const kpis = [['直播场次', day.gmv == null ? '—' : `${sessions.length} 场`], ['直播时长', day.hours == null ? '—' : `${liveNumber(day.hours,2)} 小时`], ['当日直播 GMV',liveMoney(day.gmv)], ['当日店铺 GMV',liveMoney(day.shop_gmv)], ['当日直播占比',liveRate(day.share)]];
   document.getElementById('live-day-kpis').innerHTML = kpis.map(([label,value]) => `<div class="live-day-kpi"><span>${label}</span><strong>${value}</strong></div>`).join('');
   const empty = day.gmv == null ? '此日期超出直播明细数据范围，暂无场次数据。' : '此日期没有直播场次记录。';
   document.getElementById('live-timeline').innerHTML = sessions.length ? `<div class="live-axis"><span>开播时间 · 时长</span><div class="live-ticks"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div></div>` + sessions.map(session => {
@@ -113,29 +122,41 @@ function renderLiveDay() {
 
 function renderLivePage() {
   const sameMonth = LIVE_STATE.compareMode === 'month';
-  const coverageStart = [LIVE_DATA.coverage.shop_start,LIVE_DATA.coverage.sessions_start].sort().at(-1);
-  const coverageEnd = [LIVE_DATA.coverage.shop_end,LIVE_DATA.coverage.sessions_end].sort()[0];
-  const effectiveStart = state.start < coverageStart ? coverageStart : state.start;
-  const effectiveEnd = state.end > coverageEnd ? coverageEnd : state.end;
+  const previousStart = sameMonth ? shiftMonth(state.start,-1) : state.compareStart;
+  const previousEnd = sameMonth ? shiftMonth(state.end,-1) : state.compareEnd;
+  const storeCurrent = liveTotals(state.start,state.end), storePrevious = liveTotals(previousStart,previousEnd);
+  const effectiveStart = [state.start,LIVE_DATA.coverage.sessions_start].sort().at(-1);
+  const effectiveEnd = [state.end,LIVE_DATA.coverage.sessions_end].sort()[0];
   const hasData = effectiveStart <= effectiveEnd;
-  const previousStart = sameMonth ? shiftMonth(hasData ? effectiveStart : state.start,-1) : state.compareStart;
-  const previousEnd = sameMonth ? shiftMonth(hasData ? effectiveEnd : state.end,-1) : state.compareEnd;
-  const current = hasData ? liveTotals(effectiveStart,effectiveEnd) : {days:0,shop_days:0,session_days:0,shop_gmv:null,gmv:null,hours:null,likes:null,buyers:null,share:null};
-  const previous = liveTotals(previousStart,previousEnd);
+  const livePreviousStart = sameMonth ? shiftMonth(effectiveStart,-1) : state.compareStart;
+  const livePreviousEnd = sameMonth ? shiftMonth(effectiveEnd,-1) : state.compareEnd;
+  const current = liveTotals(effectiveStart,effectiveEnd);
+  const previous = hasData ? liveTotals(livePreviousStart,livePreviousEnd) : liveTotals('','');
+  const shareStart = [effectiveStart,LIVE_SHOP_START].sort().at(-1);
+  const shareEnd = [effectiveEnd,LIVE_SHOP_END].sort()[0];
+  const shareCurrent = liveTotals(shareStart,shareEnd);
+  const sharePrevious = hasData && shareStart <= shareEnd ? liveTotals(sameMonth ? shiftMonth(shareStart,-1) : state.compareStart,sameMonth ? shiftMonth(shareEnd,-1) : state.compareEnd) : liveTotals('','');
+  current.shop_gmv = storeCurrent.shop_gmv; previous.shop_gmv = storePrevious.shop_gmv;
+  current.share = shareCurrent.share; previous.share = sharePrevious.share;
   const compareLabel = sameMonth ? '上月同期' : '对比期';
-  document.getElementById('live-period').textContent = hasData ? `指标统计 ${effectiveStart} → ${effectiveEnd} · ${compareLabel} ${previousStart} → ${previousEnd}` : `查询 ${state.start} → ${state.end} · 暂无共同覆盖的直播与店铺数据`;
+  document.getElementById('live-period').textContent = `店铺 GMV：${state.start} → ${state.end} · ${compareLabel} ${previousStart} → ${previousEnd}`;
   const warnings = [];
-  if (!hasData) warnings.push('查询范围内没有共同覆盖的直播与店铺数据。请调整顶部查询日期。');
-  else if (effectiveStart !== state.start || effectiveEnd !== state.end) warnings.push(`查询 ${state.start} → ${state.end}；两表共同已到数据为 ${effectiveStart} → ${effectiveEnd}。六项指标按此区间计算${sameMonth ? '，上月同期同步对齐' : ''}；趋势保留完整查询范围，未到数据留空。`);
-  if (current.shop_days !== current.days || current.session_days !== current.days) warnings.push(`查询期 ${current.days} 天，店铺数据覆盖 ${current.shop_days} 天，直播明细覆盖 ${current.session_days} 天。缺少数据的汇总指标显示“—”，曲线保留空缺。`);
-  if (previous.shop_days !== previous.days || previous.session_days !== previous.days) warnings.push('对比期数据不完整，相关环比显示“暂无可比数据”。');
+  if (!hasData) warnings.push('查询期暂无直播明细，直播指标和占比显示“—”；店铺 GMV 仍按顶部完整查询区间统计。');
+  else if (effectiveStart !== state.start || effectiveEnd !== state.end) warnings.push(`直播明细仅覆盖 ${effectiveStart} → ${effectiveEnd}，直播 GMV、时长、Likes、Buyers 按此区间统计${sameMonth ? '，上月同期同步对齐' : ''}。店铺 GMV 按顶部完整区间统计；未到直播数据的日期留空，不计为 0。`);
+  if (hasData && shareStart <= shareEnd) warnings.push(`直播 GMV 占比按共同覆盖日期 ${shareStart} → ${shareEnd} 计算：${liveMoney(shareCurrent.gmv)} ÷ ${liveMoney(shareCurrent.shop_gmv)}。`);
+  if (storeCurrent.shop_days !== storeCurrent.days) warnings.push(`查询期 ${storeCurrent.days} 天，店铺数据覆盖 ${storeCurrent.shop_days} 天，店铺 GMV 显示“—”。`);
+  if (hasData && current.session_days !== current.days) warnings.push('直播数据不完整，相关汇总显示“—”。');
+  if (storePrevious.shop_days !== storePrevious.days || (hasData && previous.session_days !== previous.days) || (shareStart <= shareEnd && sharePrevious.shop_days !== sharePrevious.days)) warnings.push('对比期数据不完整，相关环比显示“暂无可比数据”。');
   document.getElementById('live-coverage').innerHTML = warnings.length ? `<div class="live-warning">${warnings.join(' ')}</div>` : '';
+  const storePeriod = `${state.start} → ${state.end}`;
+  const livePeriod = hasData ? `${effectiveStart} → ${effectiveEnd}` : '暂无直播数据';
+  const sharePeriod = hasData && shareStart <= shareEnd ? `${shareStart} → ${shareEnd}` : '暂无共同覆盖数据';
   const specs = [
-    ['店铺 GMV','shop_gmv',liveMoney,''],['直播 GMV','gmv',liveMoney,''],['直播 GMV 占比','share',liveRate,''],
-    ['直播时长','hours',value => liveNumber(value,2),'小时'],['Likes','likes',liveNumber,''],['买家数 Buyers','buyers',liveNumber,'']
+    ['店铺 GMV','shop_gmv',liveMoney,'',storePeriod],['直播 GMV','gmv',liveMoney,'',livePeriod],['直播 GMV 占比','share',liveRate,'',sharePeriod],
+    ['直播时长','hours',value => liveNumber(value,2),'小时',livePeriod],['Likes','likes',liveNumber,'',livePeriod],['买家数 Buyers','buyers',liveNumber,'',livePeriod]
   ];
-  document.getElementById('live-kpis').innerHTML = specs.map(([label,key,format,unit]) => `<article class="live-card"><div class="live-label">${label}</div><div class="live-value">${format(current[key])}${unit?`<small>${unit}</small>`:''}</div><div class="live-comparison"><span>${compareLabel} ${format(previous[key])}</span>${liveDelta(current[key],previous[key])}</div></article>`).join('');
-  document.getElementById('live-sources').innerHTML = `数据源：<a href="${liveEscape(LIVE_DATA.sources.daily)}" target="_blank" rel="noopener">SKT-SP-live · 店铺日数据</a> / <a href="${liveEscape(LIVE_DATA.sources.sessions)}" target="_blank" rel="noopener">Live-明细 · 直播场次</a>。店铺数据截至 ${LIVE_DATA.coverage.shop_end}，直播明细截至 ${LIVE_DATA.coverage.sessions_end}。日表直播销售为确认订单口径，本页统一使用明细表 Gross Sales，不混算；明细覆盖期内无场次记录的日期按 0 汇总。`;
+  document.getElementById('live-kpis').innerHTML = specs.map(([label,key,format,unit,period]) => `<article class="live-card"><div class="live-label">${label}</div><div class="live-value">${format(current[key])}${unit?`<small>${unit}</small>`:''}</div><div class="live-card-period">${period}</div><div class="live-comparison"><span>${compareLabel} ${format(previous[key])}</span>${liveDelta(current[key],previous[key])}</div></article>`).join('');
+  document.getElementById('live-sources').innerHTML = `数据源：<a href="${liveEscape(PAYLOAD.source_urls.store)}" target="_blank" rel="noopener">店铺分析 · 人民币产品数据</a> / <a href="${liveEscape(LIVE_DATA.sources.daily)}" target="_blank" rel="noopener">历史店铺日数据</a> / <a href="${liveEscape(LIVE_DATA.sources.sessions)}" target="_blank" rel="noopener">Live-明细 · 直播场次</a>。店铺分析数据覆盖 ${PAYLOAD.available_range.start} → ${PAYLOAD.available_range.end}；此范围外的历史店铺 GMV 使用日表按汇率换算。直播明细截至 ${LIVE_DATA.coverage.sessions_end}，按 Gross Sales 换算人民币；明细覆盖期内无场次记录的日期按 0 汇总，覆盖期外留空。`;
   renderLiveCharts(); renderLiveDay();
 }
 

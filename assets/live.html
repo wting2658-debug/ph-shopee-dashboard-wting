@@ -2,7 +2,7 @@
     <main class="dashboard-page" id="live-page" hidden>
       <section class="panel live-intro">
         <div class="live-controls"><div><h2 class="panel-title">Shopee · 直播概览</h2><div class="live-meta" id="live-period"></div></div><div class="live-date-control"><label for="live-compare-mode">对比方式</label><select class="live-select" id="live-compare-mode"><option value="month">上月同期（自动）</option><option value="custom">顶部对比日期</option></select></div></div>
-        <div class="live-note">金额单位：人民币元 ¥。店铺 GMV 来自日表 Shop GMV，直播 GMV 来自场次 Gross Sales，均按对应记录的源表汇率换算（人民币 = 比索金额 ÷ 汇率）；明细汇率缺失时匹配同日店铺表汇率。占比 = 直播 GMV ÷ 店铺 GMV。直播时长按小时展示。Buyers 为各场买家数之和，未跨场去重。默认自动对齐上月同期；如需使用顶部对比日期，请切换对比方式。</div>
+        <div class="live-note">金额单位：人民币元 ¥。店铺 GMV 与“店铺分析”使用相同的人民币产品数据，汇总全部产品，并按顶部完整查询区间统计。直播 GMV 按场次 Gross Sales ÷ 源表汇率换算人民币；明细汇率缺失时匹配同日店铺表汇率。直播 GMV 占比仅按店铺与直播共同覆盖的日期计算。各指标下方注明统计日期，默认自动对齐各自的上月同期。Buyers 为各场买家数之和，未跨场去重。</div>
       </section>
       <div id="live-coverage" role="status"></div>
       <section class="live-kpis" id="live-kpis" aria-label="直播核心指标"></section>
