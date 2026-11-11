@@ -46,7 +46,7 @@ def process(daily_path, sessions_path):
     skipped_daily = 0
     with Path(daily_path).open(encoding="utf-8-sig", newline="") as stream:
         reader = csv.DictReader(stream)
-        if not {"Date", "Shop GMV", "Sales(Confirmed Orders)(₱)"}.issubset(reader.fieldnames or []):
+        if not {"Date", "Shop GMV", "Sales(Confirmed Orders)(₱)", "汇率"}.issubset(reader.fieldnames or []):
             raise ValueError("Livestream daily source headers changed")
         for row in reader:
             shop_gmv = number(row["Shop GMV"])
@@ -56,14 +56,18 @@ def process(daily_path, sessions_path):
             date = datetime.strptime(row["Date"].strip(), "%Y/%m/%d").date().isoformat()
             if date in daily:
                 raise ValueError(f"Duplicate shop day: {date}")
-            daily[date] = {"date": date, "shop_gmv": shop_gmv,
-                           "confirmed_live_gmv": number(row["Sales(Confirmed Orders)(₱)"])}
+            rate = number(row["汇率"])
+            if rate is None or rate <= 0:
+                raise ValueError(f"Missing or invalid exchange rate for shop day {date}")
+            confirmed = number(row["Sales(Confirmed Orders)(₱)"])
+            daily[date] = {"date": date, "shop_gmv": shop_gmv / rate, "exchange_rate": rate,
+                           "confirmed_live_gmv": confirmed / rate if confirmed is not None else None}
 
     sessions, seen = [], set()
-    repaired_dates = 0
+    repaired_dates = repaired_rates = 0
     with Path(sessions_path).open(encoding="utf-8-sig", newline="") as stream:
         reader = csv.DictReader(stream)
-        required = {"Livestream Session ID", "Start Date", "Total Live Duration", "Likes", "Buyers", "Gross Sales(Local Currency)"}
+        required = {"Livestream Session ID", "Start Date", "Total Live Duration", "Likes", "Buyers", "Gross Sales(Local Currency)", "汇率"}
         if not required.issubset(reader.fieldnames or []):
             raise ValueError("Livestream session source headers changed")
         for row in reader:
@@ -78,19 +82,30 @@ def process(daily_path, sessions_path):
             gmv, likes, buyers = (number(row[key]) for key in ("Gross Sales(Local Currency)", "Likes", "Buyers"))
             if any(value is None or value < 0 for value in (hours, gmv, likes, buyers)):
                 raise ValueError(f"Missing or invalid metric in session {session_id}")
+            date = start.date().isoformat()
+            rate = number(row["汇率"])
+            if rate is None or rate <= 0:
+                # Formula helper errors affect recent sessions; match the actual
+                # Start Date to the daily source rather than inventing a rate.
+                rate = daily.get(date, {}).get("exchange_rate")
+                if rate is None:
+                    raise ValueError(f"Missing or invalid exchange rate for session {session_id} on {date}")
+                repaired_rates += 1
             repaired_dates += int(str(row.get("日期", "")).startswith("#"))
             sessions.append({"id": session_id, "name": row.get("Livestream Name", "").strip(),
                              "date": start.date().isoformat(), "start": start.isoformat(timespec="seconds"),
                              "end": (start + timedelta(hours=hours)).isoformat(timespec="seconds"),
-                             "hours": round(hours, 8), "gmv": gmv, "likes": likes, "buyers": buyers})
+                             "hours": round(hours, 8), "gmv": gmv / rate, "exchange_rate": rate,
+                             "likes": likes, "buyers": buyers})
     sessions.sort(key=lambda item: (item["start"], item["id"]))
     if not daily or not sessions:
         raise ValueError("Livestream sources contain no usable data")
     return {"generated_at": datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="seconds"),
-            "currency": "PHP", "sources": {"daily": SHEET + "498581239", "sessions": SHEET + "1942385414"},
+            "currency": "CNY", "sources": {"daily": SHEET + "498581239", "sessions": SHEET + "1942385414"},
             "coverage": {"shop_start": min(daily), "shop_end": max(daily),
                          "sessions_start": sessions[0]["date"], "sessions_end": sessions[-1]["date"]},
-            "quality": {"ignored_daily_template_rows": skipped_daily, "repaired_helper_dates": repaired_dates},
+            "quality": {"ignored_daily_template_rows": skipped_daily, "repaired_helper_dates": repaired_dates,
+                        "repaired_session_exchange_rates": repaired_rates},
             "daily": sorted(daily.values(), key=lambda item: item["date"]), "sessions": sessions}
 
 

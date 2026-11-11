@@ -2,19 +2,19 @@
     <main class="dashboard-page" id="live-page" hidden>
       <section class="panel live-intro">
         <div class="live-controls"><div><h2 class="panel-title">Shopee · 直播概览</h2><div class="live-meta" id="live-period"></div></div><div class="live-date-control"><label for="live-compare-mode">对比方式</label><select class="live-select" id="live-compare-mode"><option value="month">上月同期（自动）</option><option value="custom">顶部对比日期</option></select></div></div>
-        <div class="live-note">金额单位：菲律宾比索 ₱。直播 GMV 按场次 Gross Sales（本币）汇总，店铺 GMV 来自日表 Shop GMV；占比 = 直播 GMV ÷ 店铺 GMV。直播时长由源表 HH:MM:SS 换算为小时。Buyers 为各场买家数之和，未跨场去重。默认自动对齐上月同期；如需使用顶部对比日期，请切换对比方式。</div>
+        <div class="live-note">金额单位：人民币元 ¥。店铺 GMV 来自日表 Shop GMV，直播 GMV 来自场次 Gross Sales，均按对应记录的源表汇率换算（人民币 = 比索金额 ÷ 汇率）；明细汇率缺失时匹配同日店铺表汇率。占比 = 直播 GMV ÷ 店铺 GMV。直播时长按小时展示。Buyers 为各场买家数之和，未跨场去重。默认自动对齐上月同期；如需使用顶部对比日期，请切换对比方式。</div>
       </section>
       <div id="live-coverage" role="status"></div>
       <section class="live-kpis" id="live-kpis" aria-label="直播核心指标"></section>
       <div class="live-charts">
-        <section class="panel"><div class="panel-head"><div><h2 class="panel-title">店铺 GMV · 直播 GMV · 直播占比</h2><div class="panel-subtitle">左轴：GMV（₱） · 右轴：直播 GMV 占比（%）</div></div></div><div class="live-chart"><canvas id="chart-live-gmv" role="img" aria-label="店铺GMV、直播GMV和直播占比日趋势"></canvas></div><div class="live-note">按日展示。点击曲线日期，可查看下方对应的直播场次。</div></section>
-        <section class="panel"><div class="panel-head"><div><h2 class="panel-title">店铺 GMV · 直播时长</h2><div class="panel-subtitle">左轴：店铺 GMV（₱） · 右轴：直播时长（小时）</div></div></div><div class="live-chart"><canvas id="chart-live-hours" role="img" aria-label="店铺GMV与直播时长日趋势"></canvas></div><div class="live-note">双轴对照每日变化，便于观察直播时长与店铺 GMV 的关系；趋势本身不代表因果。</div></section>
+        <section class="panel"><div class="panel-head"><div><h2 class="panel-title">店铺 GMV · 直播 GMV · 直播占比</h2><div class="panel-subtitle">左轴：GMV（人民币元） · 右轴：直播 GMV 占比（%）</div></div></div><div class="live-chart"><canvas id="chart-live-gmv" role="img" aria-label="店铺GMV、直播GMV和直播占比日趋势"></canvas></div><div class="live-note">按日展示。点击曲线日期，可查看下方对应的直播场次。</div></section>
+        <section class="panel"><div class="panel-head"><div><h2 class="panel-title">店铺 GMV · 直播时长</h2><div class="panel-subtitle">左轴：店铺 GMV（人民币元） · 右轴：直播时长（小时）</div></div></div><div class="live-chart"><canvas id="chart-live-hours" role="img" aria-label="店铺GMV与直播时长日趋势"></canvas></div><div class="live-note">双轴对照每日变化，便于观察直播时长与店铺 GMV 的关系；趋势本身不代表因果。</div></section>
       </div>
       <section class="panel">
-        <div class="live-controls"><div><h2 class="panel-title">直播时段与场次明细</h2><div class="panel-subtitle">选择一天，查看开播时间、结束时间、直播小时数及 GMV。</div></div><div class="live-date-control"><label for="live-detail-date">直播日期</label><input class="live-select" type="date" id="live-detail-date"></div></div>
+        <div class="live-controls"><div><h2 class="panel-title">直播时段与场次明细</h2><div class="panel-subtitle">独立选择全部历史日期，查看开播时间、结束时间、直播小时数及 GMV，不受顶部查询区间限制。</div></div><div class="live-date-control"><label for="live-detail-date">直播日期</label><input class="live-select" type="date" id="live-detail-date"></div></div>
         <div id="live-day-kpis" class="live-day-kpis"></div>
         <div id="live-timeline" class="live-timeline" aria-label="当日直播时间轴"></div>
-        <div class="live-table-wrap"><table class="live-table"><thead><tr><th>直播场次</th><th>开播时间</th><th>结束时间</th><th>时长（小时）</th><th>直播 GMV（₱）</th><th>当日店铺 GMV（₱）</th><th>占当日店铺 GMV</th><th>Likes</th><th>Buyers</th></tr></thead><tbody id="live-session-rows"></tbody></table></div>
+        <div class="live-table-wrap"><table class="live-table"><thead><tr><th>直播场次</th><th>开播时间</th><th>结束时间</th><th>时长（小时）</th><th>直播 GMV（人民币元）</th><th>当日店铺 GMV（人民币元）</th><th>占当日店铺 GMV</th><th>Likes</th><th>Buyers</th></tr></thead><tbody id="live-session-rows"></tbody></table></div>
         <div class="live-note">时间沿用源表 Start Date（菲律宾当地时间，UTC+8）。跨日场次整场归开播日，结束时间标注次日；时间轴显示开播日 00:00–24:00 范围。店铺 GMV 为当日全店金额，逐场重复展示仅供参照，不能相加；源表未提供直播时段内的全店 GMV。</div>
         <div class="live-note" id="live-sources"></div>
       </section>

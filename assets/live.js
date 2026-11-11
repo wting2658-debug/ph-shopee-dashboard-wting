@@ -6,9 +6,11 @@ for (const session of LIVE_DATA.sessions) {
   LIVE_DAYS.get(session.date).push(session);
 }
 const LIVE_STATE = { date: null, compareMode: 'month' };
+const LIVE_DETAIL_START = [LIVE_DATA.coverage.shop_start,LIVE_DATA.coverage.sessions_start].sort()[0];
+const LIVE_DETAIL_END = [LIVE_DATA.coverage.shop_end,LIVE_DATA.coverage.sessions_end].sort().at(-1);
 const liveEscape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const liveNumber = (value, decimals = 0) => value == null || !Number.isFinite(value) ? '—' : Number(value).toLocaleString('zh-CN', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
-const liveMoney = value => value == null ? '—' : `₱${liveNumber(value, 2)}`;
+const liveMoney = value => value == null ? '—' : `¥${liveNumber(value, 2)}`;
 const liveRate = value => value == null ? '—' : `${liveNumber(value * 100, 2)}%`;
 const liveRatio = (numerator, denominator) => numerator == null || denominator == null || denominator === 0 ? null : numerator / denominator;
 
@@ -71,7 +73,7 @@ function liveChartOptions(dates, axis, title) {
     },
     scales: {
       x: {grid:{display:false}, ticks:{color:'#667c93',maxTicksLimit:9,maxRotation:45}},
-      gmv: {type:'linear', position:'left', beginAtZero:true, title:{display:true,text:'GMV（₱）'}, ticks:{color:'#667c93',callback:value => liveNumber(value)}, grid:{color:'#eaf0f6'}},
+      gmv: {type:'linear', position:'left', beginAtZero:true, title:{display:true,text:'GMV（人民币元）'}, ticks:{color:'#667c93',callback:value => liveNumber(value)}, grid:{color:'#eaf0f6'}},
       [axis]: {type:'linear',position:'right',beginAtZero:true,title:{display:true,text:title}, grid:{drawOnChartArea:false}, ticks:{color:'#667c93',callback:value => axis === 'share' ? `${liveNumber(value*100,0)}%` : liveNumber(value,1)}}
     }
   };
@@ -87,9 +89,9 @@ function renderLiveCharts() {
 
 function renderLiveDay() {
   const input = document.getElementById('live-detail-date');
-  input.min = state.start; input.max = state.end;
-  if (!LIVE_STATE.date || LIVE_STATE.date < state.start || LIVE_STATE.date > state.end) {
-    LIVE_STATE.date = liveDates(state.start,state.end).filter(date => LIVE_DAYS.has(date)).at(-1) || state.end;
+  input.min = LIVE_DETAIL_START; input.max = LIVE_DETAIL_END;
+  if (!LIVE_STATE.date || LIVE_STATE.date < LIVE_DETAIL_START || LIVE_STATE.date > LIVE_DETAIL_END) {
+    LIVE_STATE.date = LIVE_DATA.coverage.sessions_end;
   }
   input.value = LIVE_STATE.date;
   const day = liveDay(LIVE_STATE.date), sessions = LIVE_DAYS.get(LIVE_STATE.date) || [];
@@ -139,7 +141,8 @@ function renderLivePage() {
 
 document.getElementById('live-detail-date').addEventListener('change', event => {
   const selected = event.target.value;
-  if (selected && selected >= state.start && selected <= state.end) { LIVE_STATE.date = selected; renderLiveDay(); }
+  if (selected && selected >= LIVE_DETAIL_START && selected <= LIVE_DETAIL_END) { LIVE_STATE.date = selected; }
+  renderLiveDay();
 });
 document.getElementById('live-compare-mode').addEventListener('change', event => {
   LIVE_STATE.compareMode = event.target.value;

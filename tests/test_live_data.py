@@ -22,26 +22,47 @@ class LiveDataTests(unittest.TestCase):
         sessions = root / 'sessions.csv'
         with daily.open('w', encoding='utf-8', newline='') as stream:
             writer = csv.writer(stream)
-            writer.writerows([['Date','Shop GMV','Sales(Confirmed Orders)(₱)'],
-                              ['2026/11/9','1,000','100'], ['2026/11/10','#N/A','']])
+            writer.writerows([['Date','Shop GMV','Sales(Confirmed Orders)(₱)','汇率'],
+                              ['2026/11/9','1,000','100','10'], ['2026/11/10','#N/A','','#N/A']])
         with sessions.open('w', encoding='utf-8', newline='') as stream:
             writer = csv.writer(stream)
-            writer.writerow(['Livestream Session ID','Start Date','Total Live Duration','Likes','Buyers','Gross Sales(Local Currency)','日期'])
-            writer.writerow(['123','9/11/2026 23:30','02:15:30','1,200','12','130','#VALUE!'])
+            writer.writerow(['Livestream Session ID','Start Date','Total Live Duration','Likes','Buyers','Gross Sales(Local Currency)','日期','汇率'])
+            writer.writerow(['123','9/11/2026 23:30','02:15:30','1,200','12','130','#VALUE!','#VALUE!'])
             if duplicate:
-                writer.writerow(['123','9/11/2026 23:30','02:15:30','1,200','12','130','#VALUE!'])
-            writer.writerow(['','','','','','','#NUM!'])
+                writer.writerow(['123','9/11/2026 23:30','02:15:30','1,200','12','130','#VALUE!','#VALUE!'])
+            writer.writerow(['','','','','','','#NUM!',''])
         return daily, sessions
 
     def test_formula_errors_do_not_drop_valid_sessions_or_create_future_zeroes(self):
         with tempfile.TemporaryDirectory() as directory:
             payload = process(*self.fixture(Path(directory)))
         self.assertEqual(len(payload['daily']), 1)
-        self.assertEqual(payload['daily'][0]['shop_gmv'], 1000)
+        self.assertEqual(payload['currency'], 'CNY')
+        self.assertEqual(payload['daily'][0]['shop_gmv'], 100)
+        self.assertEqual(payload['daily'][0]['confirmed_live_gmv'], 10)
+        self.assertEqual(payload['sessions'][0]['gmv'], 13)
+        self.assertEqual(payload['quality']['repaired_session_exchange_rates'], 1)
         self.assertEqual(payload['sessions'][0]['date'], '2026-11-09')
         self.assertEqual(payload['sessions'][0]['end'], '2026-11-10T01:45:30')
         self.assertEqual(payload['sessions'][0]['likes'], 1200)
         self.assertEqual(payload['quality']['repaired_helper_dates'], 1)
+
+    def test_each_record_uses_its_own_exchange_rate_without_rounding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            daily, sessions = self.fixture(Path(directory))
+            with sessions.open('a', encoding='utf-8', newline='') as stream:
+                csv.writer(stream).writerow(['124','8/11/2026 10:00','01:00:00','1','1','101','','8.1'])
+            payload = process(daily, sessions)
+        self.assertAlmostEqual(payload['sessions'][0]['gmv'], 101 / 8.1)
+        self.assertEqual(payload['sessions'][0]['exchange_rate'], 8.1)
+
+    def test_missing_exchange_rate_without_matching_day_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            daily, sessions = self.fixture(Path(directory))
+            with sessions.open('a', encoding='utf-8', newline='') as stream:
+                csv.writer(stream).writerow(['124','8/11/2026 10:00','01:00:00','1','1','100','','0'])
+            with self.assertRaisesRegex(ValueError, 'exchange rate for session 124'):
+                process(daily, sessions)
 
     def test_duplicate_sessions_fail_before_double_counting(self):
         with tempfile.TemporaryDirectory() as directory:

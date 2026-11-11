@@ -22,8 +22,8 @@ SUBSIDY_SOURCES = [
     ("补贴月度趋势", "2029376544", "subsidy_monthly.csv", "", ("年", "月", "TT-GMV", "①SP-GMV")),
 ]
 LIVE_SOURCES = [
-    ("直播店铺日数据", "498581239", "live_daily.csv", "Date,", ("Shop GMV",)),
-    ("直播场次明细", "1942385414", "live_sessions.csv", "Year,", ("Start Date", "Total Live Duration", "Likes", "Buyers", "Gross Sales(Local Currency)")),
+    ("直播店铺日数据", "498581239", "live_daily.csv", "Date,", ("Shop GMV", "汇率")),
+    ("直播场次明细", "1942385414", "live_sessions.csv", "Year,", ("Start Date", "Total Live Duration", "Likes", "Buyers", "Gross Sales(Local Currency)", "汇率")),
 ]
 
 
