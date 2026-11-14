@@ -57,7 +57,7 @@
     for (const file of scripts) {
       await new Promise((resolve,reject) => {
         const script = document.createElement('script');
-        script.src = file + '?v=' + encodeURIComponent(manifest.version);
+        script.src = file + '?v=' + encodeURIComponent(manifest.asset_version || manifest.version);
         script.onload = resolve;
         script.onerror = () => reject(new Error('Module failed to load'));
         document.body.appendChild(script);

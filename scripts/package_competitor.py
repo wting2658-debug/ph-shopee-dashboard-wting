@@ -86,8 +86,15 @@ def package(source, output):
     if reconstructed != data['rows']:
         raise ValueError('Source order changed during packing')
     version = hashlib.sha256(encode_json(chunks)).hexdigest()[:16]
+    asset_hash = hashlib.sha256(version.encode())
+    for path in [*(output / name for name in STATIC_FILES), *(ROOT / 'assets' / name for name in (
+        'competitor-loader.js', 'competitor-bridge.js', 'competitor-embed.css',
+    ))]:
+        asset_hash.update(path.read_bytes())
+    asset_version = asset_hash.hexdigest()[:16]
     manifest = {
         'format': 'ph-competitor-manifest-v1', 'version': version,
+        'asset_version': asset_version,
         'row_count': len(data['rows']), 'chunks': chunks,
         'metadata': {key: value for key, value in data.items() if key != 'rows'},
     }
@@ -95,11 +102,12 @@ def package(source, output):
     html = (source / 'index.html').read_text('utf-8')
     html = re.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=re.S)
     html = html.replace('<body>', '<body data-loading>')
-    loading = '<section id="competitor-loading" role="status" aria-live="polite"><p id="competitor-loading-text">正在加载菲律宾历史排名…</p><noscript>请开启 JavaScript 以查看竞品监控。</noscript></section>'
+    loading = '<section id="competitor-loading" role="status" aria-live="polite"><p id="competitor-loading-text">正在加载菲律宾历史排名…</p><noscript>请开启 JavaScript 以查看竞品监控。</noscript></section><div class="competitor-scroll" tabindex="0" role="region" aria-label="竞品分析内容">'
     html = html.replace('<div id="notice"', loading + '<div id="notice"', 1)
-    styles = '<style>.embedded main{max-width:none;padding:0}.embedded header{display:none}.embedded body{background:transparent}[data-loading] .controls,[data-loading] #notice,[data-loading] #content{display:none}#competitor-loading{padding:48px;text-align:center;background:white;border-radius:12px;margin:12px 0}#competitor-loading p{color:#16748d}</style>'
+    html = html.replace('</main>', '</div></main>', 1)
+    styles = '<link rel="stylesheet" href="../competitor-embed.css?v=' + asset_version + '">'
     html = html.replace('</head>', styles + '</head>')
-    html = html.replace('</body>', '<script src="../competitor-loader.js?v=' + version + '"></script></body>')
+    html = html.replace('</body>', '<script src="../competitor-loader.js?v=' + asset_version + '"></script></body>')
     (output / 'index.html').write_text(html, 'utf-8')
     return {
         'rows': len(data['rows']), 'months': len(chunks), 'row_differences': 0,

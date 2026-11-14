@@ -1,0 +1,36 @@
+/* Keep the embedded filters above an independent analysis scroll area. */
+.embedded, .embedded body { height:100%; min-height:0; overflow:hidden; }
+.embedded body { background:transparent; }
+.embedded main { display:flex; flex-direction:column; width:100%; max-width:none; height:100vh; height:100dvh; min-height:0; padding:0; }
+.embedded header { display:none; }
+.embedded .controls { position:relative; top:auto; flex:none; }
+.embedded .competitor-scroll { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; padding:0 3px 12px; }
+.embedded .competitor-scroll:focus-visible { outline:2px solid #98daf8; outline-offset:-2px; }
+.embedded .controls .filters { padding:10px 14px; gap:10px; }
+.embedded .controls select, .embedded .controls .segmented { height:36px; margin-top:5px; font-size:13px; }
+.embedded .controls nav { padding:5px; }
+.embedded .controls nav button { padding:10px 3px; font-size:14px; }
+.embedded .notice { padding:8px 4px; font-size:12px; line-height:1.45; }
+.embedded .self-view { gap:16px; }
+.embedded .self-scope { gap:16px; padding:0 4px; }
+.embedded .self-scope > label { min-width:300px; }
+.embedded .self-scope p { margin:6px 0 0; line-height:1.45; }
+.embedded .self-trends { gap:16px; }
+.embedded .self-panel { padding:18px 18px 16px; scroll-margin-top:8px; }
+.embedded .self-panel h2 { margin-bottom:6px; }
+.embedded .self-subtitle { margin-bottom:12px; line-height:1.5; }
+.embedded .self-picker-field, .embedded .self-category-field { margin:10px 0; }
+.embedded .self-product-legend { gap:10px; padding-top:10px; margin-top:10px; }
+.embedded .history-section { scroll-margin-top:8px; }
+.embedded footer { margin-top:16px; line-height:1.5; }
+[data-loading] .controls, [data-loading] .competitor-scroll { display:none; }
+#competitor-loading { padding:32px; text-align:center; background:white; border-radius:12px; margin:12px 0; }
+#competitor-loading p { color:#16748d; }
+@media(max-width:650px) {
+  .embedded .controls .filters { grid-template-columns:repeat(4,minmax(0,1fr)); padding:7px 8px; gap:7px; }
+  .embedded .controls .filters > label { grid-row:auto; grid-column:auto; font-size:10px; }
+  .embedded .controls select, .embedded .controls .segmented { height:32px; padding-left:5px; padding-right:5px; font-size:11px; }
+  .embedded .controls nav button { padding:8px 3px; font-size:12px; }
+  .embedded .self-scope > label { min-width:0; }
+  .embedded .self-panel { padding:14px 12px; }
+}

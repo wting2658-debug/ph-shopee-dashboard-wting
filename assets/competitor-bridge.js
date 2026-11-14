@@ -4,16 +4,14 @@ render();
 document.body.removeAttribute('data-loading');
 document.getElementById('competitor-loading').remove();
 if (new URLSearchParams(location.search).get('embedded') === '1') {
-  let competitorLastHeight = 0;
-  const notifyCompetitorParent = () => {
-    const height = Math.max(300, Math.ceil(document.querySelector('main').getBoundingClientRect().height));
-    if (height === competitorLastHeight) return;
-    competitorLastHeight = height;
-    parent.postMessage({
-      type:'ph-competitor:status', height,
-      start:data.coverage.start, end:data.coverage.end, updated:data.updated_at,
-    }, location.origin);
-  };
-  new ResizeObserver(notifyCompetitorParent).observe(document.querySelector('main'));
-  notifyCompetitorParent();
+  const scrollArea = document.querySelector('.competitor-scroll');
+  const controls = document.querySelector('.controls');
+  controls.addEventListener('click', event => {
+    if (event.target.closest('[data-tab]')) scrollArea.scrollTop = 0;
+  });
+  controls.addEventListener('change', () => { scrollArea.scrollTop = 0; });
+  parent.postMessage({
+    type:'ph-competitor:status',
+    start:data.coverage.start, end:data.coverage.end, updated:data.updated_at,
+  }, location.origin);
 }

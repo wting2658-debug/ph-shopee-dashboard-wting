@@ -4,6 +4,7 @@ const competitorOriginalSubtitle = competitorSubtitle.innerHTML;
 let competitorStarted = false;
 function syncCompetitorShell() {
   const active = state.activePage === 'competitor';
+  document.body.classList.toggle('competitor-mode', active);
   document.querySelector('.dashboard-controls').hidden = active;
   document.querySelector('.hero-refresh').hidden = active;
   competitorSubtitle.innerHTML = active
@@ -25,9 +26,6 @@ window.addEventListener('message', event => {
   if (event.origin !== location.origin || event.source !== competitorFrame.contentWindow) return;
   const message = event.data;
   if (!message || message.type !== 'ph-competitor:status') return;
-  if (Number.isFinite(message.height) && message.height >= 200 && message.height <= 100000) {
-    competitorFrame.style.height = Math.ceil(message.height) + 'px';
-  }
   const period = document.getElementById('competitor-period');
   if (message.error) period.textContent = '竞品数据暂时未能加载，请点击“重新加载”重试。';
   else if (typeof message.start === 'string' && typeof message.end === 'string') {
