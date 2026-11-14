@@ -321,7 +321,7 @@ input:focus-visible,summary:focus-visible,.history-tablewrap:focus-visible{outli
 
 .controls{overflow:visible}
 .controls .filters{grid-template-columns:64px 142px minmax(90px,.6fr) minmax(155px,1fr) minmax(180px,1.2fr) minmax(165px,1.1fr) 115px 115px;gap:12px;align-items:start}
-.controls nav{border-radius:0 0 9px 9px}
+.controls nav{border-top:0;border-bottom:1px solid var(--line);border-radius:9px 9px 0 0}
 .global-category-level{min-width:0}.global-category-level select{font-size:13px;padding:0 9px}.global-category-level select:disabled{background:#f6f9fc;color:#91a1af;cursor:default}
 .ranking-picker-field{min-width:0}
 .ranking-picker{margin-top:8px;position:relative}
