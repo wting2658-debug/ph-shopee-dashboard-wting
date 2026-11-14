@@ -6,6 +6,8 @@
 
 竞品模块使用视口内的固定框架：主标题、导航、数据说明、类目与月份筛选及五个页签保持不动，仅其下方分析区域独立滚动。切换内部页签或上方筛选时，分析区域回到顶部。标题与说明文字、筛选及分析卡片采用紧凑间距；切换原经营模块后恢复其常规页面滚动。嵌入样式独立放在 `assets/competitor-embed.css`，不影响“独立打开”的页面。样式与脚本版本随资源内容变化，避免旧缓存延用之前的滚动布局。
 
+七个主模块共用相同的顶部紧凑间距，包括标题区留白、说明文字行距、导航间距和按钮高度。该共用样式放在 `assets/competitor-shell.css`，由注入步骤写入主页面；竞品专用的固定框架仍仅在竞品模块生效。
+
 `inject_competitor_page.py` 已接入 `build_flagship_onsite_page1.py`，日常重建会保留该入口。部署脚本原本已复制整个 `assets` 目录，无需变更 Cloudflare 设置。`assets/competitor-shell.*`、`competitor-loader.js` 和 `competitor-bridge.js` 为接入代码；原竞品功能文件由打包命令从已核验看板复制。
 
 ## 更新竞品快照

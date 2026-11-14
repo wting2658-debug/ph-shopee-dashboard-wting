@@ -1349,7 +1349,11 @@
 
     /* ===== End Live Page ===== */
     /* ===== Competitor Page ===== */
-.dashboard-tabs { width:100%; flex-wrap:wrap; }
+.page { padding-top:12px; }
+.hero { padding:4px 4px 0; margin-bottom:10px; }
+.dashboard-subtitle { margin:6px 0 8px; font-size:14px; line-height:1.4; }
+.dashboard-tabs { width:100%; flex-wrap:wrap; margin-top:8px; padding:4px; }
+.dashboard-tab { padding:10px 28px; }
 .dashboard-tabs .competitor-tab { margin-left:auto; }
 .dashboard-controls[hidden], .hero-refresh[hidden] { display:none; }
 #competitor-page .competitor-intro { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:10px; padding:14px 18px; }
@@ -1362,10 +1366,7 @@
 #competitor-frame { display:block; width:100%; height:920px; border:0; border-radius:16px; background:#edf8fd; }
 body.competitor-mode { height:100vh; height:100dvh; overflow:hidden; }
 .competitor-mode .page { height:100vh; height:100dvh; display:flex; flex-direction:column; min-height:0; padding:12px 0 10px; }
-.competitor-mode .hero { flex:none; padding:4px 4px 0; margin-bottom:10px; }
-.competitor-mode .dashboard-subtitle { margin:6px 0 8px; font-size:14px; line-height:1.4; }
-.competitor-mode .dashboard-tabs { margin-top:8px; padding:4px; }
-.competitor-mode .dashboard-tab { padding:10px 28px; }
+.competitor-mode .hero { flex:none; }
 .competitor-mode #competitor-page:not([hidden]) { display:flex; flex:1; flex-direction:column; min-height:0; }
 .competitor-mode .competitor-intro { flex:none; }
 .competitor-mode #competitor-frame { flex:1; height:0; min-height:0; }
@@ -1373,21 +1374,22 @@ body.competitor-mode { height:100vh; height:100dvh; overflow:hidden; }
 @media(max-width:700px) {
   #competitor-page .competitor-intro { align-items:flex-start; flex-direction:column; gap:7px; padding:10px 12px; }
   .dashboard-tabs .dashboard-tab { flex:1 0 auto; }
+  .page { padding-top:6px; }
   .competitor-mode .page { padding-top:6px; padding-bottom:6px; }
-  .competitor-mode .hero { margin-bottom:7px; }
-  .competitor-mode .dashboard-subtitle { font-size:12px; }
-  .competitor-mode .dashboard-tabs { flex-wrap:nowrap; overflow-x:auto; }
-  .competitor-mode .dashboard-tabs .dashboard-tab { flex:none; padding:8px 14px; font-size:13px; }
+  .hero { margin-bottom:7px; }
+  .dashboard-subtitle { font-size:12px; }
+  .dashboard-tabs { flex-wrap:nowrap; overflow-x:auto; }
+  .dashboard-tabs .dashboard-tab { flex:none; padding:8px 14px; font-size:13px; }
   #competitor-page .competitor-actions { gap:12px; font-size:12px; }
   #competitor-page .competitor-actions button { padding:6px 12px; }
   #competitor-page .competitor-description, #competitor-page .competitor-period { font-size:12px; }
 }
 @media(max-height:720px) {
-  .competitor-mode .dashboard-title { font-size:32px; }
-  .competitor-mode .hero-kicker { padding:4px 10px; font-size:10px; }
-  .competitor-mode .dashboard-subtitle { margin:4px 0; font-size:12px; }
-  .competitor-mode .dashboard-tab { padding-top:7px; padding-bottom:7px; font-size:14px; }
-  .competitor-mode .hero { margin-bottom:7px; }
+  .dashboard-title { font-size:32px; }
+  .hero-kicker { padding:4px 10px; font-size:10px; }
+  .dashboard-subtitle { margin:4px 0; font-size:12px; }
+  .dashboard-tab { padding-top:7px; padding-bottom:7px; font-size:14px; }
+  .hero { margin-bottom:7px; }
   #competitor-page .competitor-intro { padding-top:10px; padding-bottom:10px; margin-bottom:7px; }
 }
 
