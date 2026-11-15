@@ -8,6 +8,7 @@ from urllib.request import Request, urlopen
 
 SHEET_ID = "1I_Q-Rx6QklML2023EUG8U1hb4MPN8shyeTyShiXrcYY"
 SHIPMENT_SHEET_ID = "1dwWGTlSeO9cL8NsYQBu3JUmB-H7t02pK16gSIpetl2Y"
+AFFILIATE_SHEET_ID = "1zDffbrbBkPn5oTnOD2xy1MwEFwXczXyLUeRkH7bPeng"
 REPORT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = REPORT_DIR / "data"
 SOURCES = [
@@ -24,6 +25,12 @@ SUBSIDY_SOURCES = [
 LIVE_SOURCES = [
     ("直播店铺日数据", "498581239", "live_daily.csv", "Date,", ("Shop GMV", "汇率")),
     ("直播场次明细", "1942385414", "live_sessions.csv", "Year,", ("Start Date", "Total Live Duration", "Likes", "Buyers", "Gross Sales(Local Currency)", "汇率")),
+]
+AFFILIATE_SOURCES = [
+    ("联盟商品明细", "1684158147", "affiliate_products.csv", "Year,Quarter", ("Product ID", "Channel", "Order Type", "Sales (Local Currency)")),
+    ("联盟店铺日表", "1971481596", "affiliate_shop.csv", "Year,Quarter", ("Shop ID", "Order Type", "Orders")),
+    ("联盟汇率", "337285465", "affiliate_rates.csv", "Year,Month", ("汇率",)),
+    ("联盟店铺GMV", "1810541072", "affiliate_gmv.csv", "", ("Sales-￥", "Date")),
 ]
 
 
@@ -59,6 +66,8 @@ def main() -> None:
         download_source(name, gid, filename, prefix, sheet_id=SHIPMENT_SHEET_ID, required_headers=headers)
     for name, gid, filename, prefix, headers in LIVE_SOURCES:
         download_source(name, gid, filename, prefix, sheet_id=SHIPMENT_SHEET_ID, required_headers=headers)
+    for name, gid, filename, prefix, headers in AFFILIATE_SOURCES:
+        download_source(name, gid, filename, prefix, sheet_id=AFFILIATE_SHEET_ID, required_headers=headers)
 
 
 if __name__ == "__main__":

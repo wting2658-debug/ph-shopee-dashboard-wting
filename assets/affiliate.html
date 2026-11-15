@@ -1,0 +1,34 @@
+    <!-- ===== Affiliate Page ===== -->
+    <main class="dashboard-page" id="affiliate-page" hidden>
+      <section class="panel af-intro">
+        <div class="af-controls"><div><h2 class="panel-title">Shopee · 联盟概览</h2><div class="af-meta" id="af-period">正在加载联盟数据…</div></div><div class="af-actions"><button type="button" class="af-button" id="af-latest">最新有数月份</button><button type="button" class="af-button" id="af-reset">清除筛选</button></div></div>
+        <div class="af-filters">
+          <label>类目<select id="af-category" class="af-select"><option value="">全部类目</option></select></label>
+          <label>商品<select id="af-product" class="af-select"><option value="">全部商品</option></select></label>
+          <label>联盟渠道<select id="af-channel" class="af-select"><option value="">全部渠道</option></select></label>
+          <label>对比方式<select id="af-compare" class="af-select"><option value="month">上月同期（自动）</option><option value="custom">顶部对比日期</option></select></label>
+        </div>
+        <div class="af-note">金额：人民币元 ¥ · Confirmed Orders。联盟花费为预估佣金；投入产出比 = 联盟 GMV ÷ 佣金，佣金率 = 佣金 ÷ 联盟 GMV。商品订单未跨商品去重。类目、商品、渠道及趋势日期点击后联动本模块；店铺 GMV 始终为全店基准。</div>
+        <div id="af-selection" class="af-selection" aria-live="polite"></div>
+      </section>
+      <div id="af-status" role="status" aria-live="polite"></div>
+      <section class="af-kpis" id="af-kpis" aria-label="联盟核心指标"></section>
+      <div class="af-charts">
+        <section class="panel"><div class="panel-head"><div><h2 class="panel-title">店铺 GMV · 联盟 GMV · 联盟占比</h2><div class="panel-subtitle" id="af-gmv-trend-period">实线为本期，同色虚线为上期，按区间第 N 天对齐。</div></div></div><div class="af-chart" data-chart-wrap><canvas id="chart-af-gmv" role="img" aria-label="联盟销售额与店铺占比趋势"></canvas></div></section>
+        <section class="panel"><div class="panel-head"><div><h2 class="panel-title">联盟花费 · 投入产出比</h2><div class="panel-subtitle" id="af-cost-trend-period">实线为本期，同色虚线为上期，按区间第 N 天对齐。</div></div></div><div class="af-chart" data-chart-wrap><canvas id="chart-af-cost" role="img" aria-label="联盟花费与投入产出比趋势"></canvas></div></section>
+        <section class="panel"><div class="panel-head"><div><h2 class="panel-title">联盟类目贡献</h2><div class="panel-subtitle">按联盟 GMV 排序 · 点击类目联动商品、指标与趋势</div></div></div><div class="af-chart" data-chart-wrap><canvas id="chart-af-category" role="img" aria-label="联盟类目销售贡献"></canvas></div></section>
+        <section class="panel"><div class="panel-head"><div><h2 class="panel-title">商品规模与佣金效率</h2><div class="panel-subtitle">横轴：联盟 GMV · 纵轴：佣金率（越低越省） · 气泡：售出件数 · 点击商品下钻</div></div></div><div class="af-chart" data-chart-wrap><canvas id="chart-af-efficiency" role="img" aria-label="商品联盟销售额与佣金率气泡图"></canvas></div><div class="af-note">结合 GMV 规模与佣金效率判断表现。零佣金商品的投入产出比显示“—”；本图仅展示 GMV 大于 0 的商品。</div></section>
+      </div>
+      <div class="af-note af-table-period" id="af-table-period"></div>
+      <div class="af-charts af-summary-panels">
+        <section class="panel"><h2 class="panel-title">联盟类目数据情况</h2><div class="af-table-wrap"><table class="af-table af-summary"><thead><tr><th>类目 / 点击筛选</th><th>联盟 GMV</th><th>GMV 环比</th><th>佣金</th><th>佣金率</th><th>售出数量</th></tr></thead><tbody id="af-category-rows"></tbody></table></div></section>
+        <section class="panel"><h2 class="panel-title">联盟渠道表现</h2><div class="af-table-wrap"><table class="af-table af-summary"><thead><tr><th>渠道 / 点击筛选</th><th>联盟 GMV</th><th>贡献占比</th><th>佣金</th><th>投入产出比</th><th>售出数量</th></tr></thead><tbody id="af-channel-rows"></tbody></table></div></section>
+      </div>
+      <section class="panel af-products">
+        <div class="af-controls"><div><h2 class="panel-title">联盟产品情况 · 效果排行</h2><div class="panel-subtitle" id="af-product-summary"></div></div><div class="af-actions"><label>最低 GMV（¥）<input type="number" min="0" value="0" step="100" id="af-min-gmv" class="af-select af-small"></label><label>排序<select id="af-sort" class="af-select"><option value="gmv">GMV 从高到低</option><option value="roi">投入产出比从高到低</option><option value="commissionRate">佣金率从低到高</option><option value="units">售出数量从高到低</option><option value="growth">GMV 增长额从高到低</option></select></label></div></div>
+        <div class="af-table-wrap"><table class="af-table af-product-table"><thead><tr><th>商品 / 点击查看</th><th>类目</th><th>联盟 GMV</th><th>GMV 环比</th><th>联盟贡献</th><th>联盟花费</th><th>佣金率</th><th>投入产出比</th><th>售出数量</th><th>商品订单</th></tr></thead><tbody id="af-product-rows"></tbody></table></div>
+        <div class="af-note">联盟贡献 = 商品 GMV ÷ 当前筛选下全部联盟 GMV；最低 GMV 仅影响效果排行和气泡图，不改变总览指标。相同投入产出比按 GMV 排序，未产生佣金的商品不参加投入产出比排名。</div>
+      </section>
+      <section class="panel af-shop-panel"><h2 class="panel-title">平台店铺日表 · 口径核对</h2><div id="af-shop-summary" class="af-shop-summary"></div><div class="af-note" id="af-sources"></div></section>
+    </main>
+    <!-- ===== End Affiliate Page ===== -->
