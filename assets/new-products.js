@@ -146,8 +146,7 @@ function npRender() {
   const modeLabel=NP_STATE.mode==='cumulative'?`各链接上新日起累计至 ${latest}`:NP_STATE.mode==='year'?`${NP_STATE.year} 年（仅统计上新后）`:`${NP_STATE.year}-${NP_STATE.month}（仅统计上新后）`;
   npEl('np-period').textContent=`${visible.length} 个新品链接 · ${modeLabel} · 数据更新 ${data.generatedAt.slice(0,16).replace('T',' ')}`;
   npEl('np-sales-caption').textContent=`当前统计：${modeLabel}。共用 SKU 的链接出货量不可相加。带 * 的值为部分日期合计。`;
-  const unobserved=visible.filter(x=>x.pre.counts.impressions<7).length;
-  npEl('np-status').innerHTML=unobserved?`<div class="np-warning">${unobserved} 个链接的上新前 7 天数据未完全覆盖。商品日表现从 ${data.coverage.performance.start} 开始提供，缺失日期显示“—”，不会计为 0。</div>`:'';
+  npEl('np-status').textContent='';
   if (!visible.some(x=>x.p.id===NP_STATE.product)) NP_STATE.product=visible.find(x=>x.p.launch<=latest)?.p.id||visible[0]?.p.id||'';
   const tr=(p,cells,pre=false)=>`<tr class="${p.id===NP_STATE.product?'np-selected':''}"${pre?` data-np-pre-product="${npEscape(p.id)}"`:''}><td>${npProductCell(p)}</td>${cells.map(c=>`<td>${c}</td>`).join('')}</tr>`;
   npEl('np-pre-rows').innerHTML=visible.map(({p,pre})=>tr(p,[p.launch,`<span class="np-date-cell">${p.preStart}<br>至 ${p.preEnd}</span>`,npMetric(pre,'sales','money'),npMetric(pre,'impressions'),npMetric(pre,'clicks'),npPercent(pre.ctr),npMetric(pre,'atc'),`${pre.counts.impressions} / 7 天${pre.counts.impressions===0?'<small>数据未覆盖</small>':''}`],true)).join('')||npNoRows(9);
