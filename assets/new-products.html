@@ -1,0 +1,50 @@
+    <!-- ===== New Products Page ===== -->
+    <main class="dashboard-page" id="new-products-page" hidden>
+      <section class="panel np-intro">
+        <div class="np-heading"><div><h2 class="panel-title">新品专区</h2><p class="np-muted" id="np-period">正在加载新品数据…</p></div><button class="np-button" id="np-reset" type="button">重置筛选</button></div>
+        <div class="np-filters">
+          <label>上新年份<select id="np-launch-year" aria-label="上新年份"></select></label>
+          <label>上新月份<select id="np-launch-month" aria-label="上新月份"></select></label>
+          <label>上新后统计周期<select id="np-mode"><option value="cumulative">累计至最新</option><option value="year">年</option><option value="month">月</option></select></label>
+          <label id="np-year-field" hidden>统计年份<select id="np-year"></select></label>
+          <label id="np-month-field" hidden>统计月份<select id="np-month"></select></label>
+          <label class="np-search-field">链接名称 / Product ID<input id="np-search" type="search" placeholder="搜索新品链接"></label>
+        </div>
+        <p class="np-muted">本专区独立筛选，不受顶部查询日期影响。上新前固定取上新日之前 7 天；上新后从上新当天起统计。金额均为人民币元，Sales 和售出件数采用 Confirmed Order 口径。</p>
+      </section>
+      <div id="np-status" role="status" aria-live="polite"></div>
+      <section class="panel np-section">
+        <div class="np-heading"><div><h2 class="panel-title">上新前 7 天 · 预热表现</h2><p class="np-muted">每行对应一个 Product ID。点击任一新品行，联动查看下方上新前 7 天的每日趋势。</p></div><label class="np-inline">排序<select id="np-sort"><option value="launch">上新时间从新到旧</option><option value="sales">Sales 从高到低</option><option value="spend">总花费从高到低</option></select></label></div>
+        <div class="np-table-wrap"><table class="np-table np-pre-table"><thead><tr><th>新品链接 / Product ID</th><th>上新时间</th><th>前 7 天区间</th><th>Sales（¥）</th><th>曝光</th><th>点击</th><th>点击率</th><th>加购人数</th><th>覆盖天数</th></tr></thead><tbody id="np-pre-rows"></tbody></table></div>
+        <div class="np-pre-trend" id="np-pre-trend-panel" hidden>
+          <h3>上新前 7 天 · 每日趋势</h3>
+          <p class="np-muted" id="np-pre-trend-caption"></p>
+          <p class="np-muted" id="np-pre-trend-note"></p>
+          <div class="np-chart np-pre-chart"><canvas id="np-pre-chart" role="img" aria-label="选中新品上新前7天的每日曝光、点击、点击率与加购人数趋势"></canvas></div>
+        </div>
+      </section>
+      <section class="panel np-section">
+        <h2 class="panel-title">上新后 · 销售与流量</h2><p class="np-muted" id="np-sales-caption"></p>
+        <div class="np-table-wrap"><table class="np-table np-sales-table"><thead><tr><th>新品链接 / Product ID</th><th>统计区间</th><th>Sales（¥）</th><th>售出件数</th><th>Shopee 出货件数<br><small>关联 SKU 口径</small></th><th>曝光</th><th>点击</th><th>点击率</th><th>成交转化率</th></tr></thead><tbody id="np-sales-rows"></tbody></table></div>
+      </section>
+      <section class="panel np-section">
+        <h2 class="panel-title">上新后 · 站内外花费与 ROI</h2><p class="np-muted">站内 ROI = 站内广告 GMV ÷ 站内花费；站外 ROI = Meta 购物转化价值 ÷ Meta 花费；全站 ROI = 链接 Sales ÷（站内花费 + Meta 花费）。三者独立计算，不相加。</p>
+        <div class="np-table-wrap"><table class="np-table np-ads-table"><thead><tr><th>新品链接 / Product ID</th><th>站内花费（¥）</th><th>站内广告 GMV（¥）</th><th>站内 ROI</th><th>Meta 花费（¥）</th><th>Meta 转化价值（¥）</th><th>站外 ROI</th><th>总花费（¥）</th><th>全站 ROI</th><th>投放数据覆盖</th></tr></thead><tbody id="np-ads-rows"></tbody></table></div>
+      </section>
+      <section class="panel np-section" id="np-detail-panel">
+        <div class="np-heading"><div><h2 class="panel-title">单链接 · 每日表现</h2><p class="np-muted" id="np-detail-caption"></p></div><label class="np-inline">选择新品<select id="np-product"></select></label></div>
+        <div class="np-detail-info" id="np-detail-info"></div>
+        <div class="np-chart-grid">
+          <div class="np-trend-header"><h3>趋势图</h3><div id="np-trend-controls" class="np-trend-controls" role="group" aria-label="趋势图指标"></div></div>
+          <p class="np-muted" id="np-trend-selected"></p>
+          <div class="np-chart np-trend-chart" id="np-trend-chart-wrap"><canvas id="np-sales-chart" role="img" aria-label="选中新品每日指标联动趋势图"></canvas></div>
+          <p class="np-empty" id="np-trend-empty" role="status" hidden>请选择指标查看趋势图。</p>
+        </div>
+        <div class="np-detail-tabs" role="group" aria-label="每日明细指标"><button type="button" data-np-detail="sales" class="active">销售与流量</button><button type="button" data-np-detail="onsite">站内投放明细</button><button type="button" data-np-detail="meta">站外投放明细</button><button type="button" data-np-detail="shipment">出货明细</button></div>
+        <p class="np-muted" id="np-shipment-caption" hidden>TT&虾皮gap = TT出货件数 − 虾皮出货件数；总出货 = TT + 虾皮 + Lazada。各渠道按关联 SKU 统计，未覆盖的渠道或日期显示“—”。</p>
+        <div class="np-table-wrap np-daily-wrap"><table class="np-table np-daily-table"><thead id="np-daily-head"></thead><tbody id="np-daily-rows"></tbody></table></div>
+        <div class="np-pagination"><span id="np-daily-count"></span><button class="np-button" id="np-prev" type="button">上一页</button><button class="np-button" id="np-next" type="button">下一页</button></div>
+      </section>
+      <section class="panel np-section np-methods"><details><summary>统计口径与数据来源</summary><div id="np-sources"></div><p>曝光、点击取链接汇总行，规格明细不重复累计；点击率 = 点击 ÷ 曝光；成交转化率 = Confirmed Order ÷ Product Clicks。加购展示 Product Visitors (Add to Cart)，每日明细同时提供加购件数。Sales 取源表 Sales-￥；Meta 美元金额按现有看板汇率 6.8 换算。趋势图中的站内 Sales 为站内广告 GMV，站外 Sales 为 Meta 购物转化价值；站内 / 站外费比 = 对应渠道花费 ÷ 链接 Sales；ROI = 对应渠道广告销售额 ÷ 对应花费，按日计算。</p><p>站内数据按 Product ID 精确匹配。Meta 源表没有 Product ID，通过站内产品名与链接名称的唯一映射关联；无法唯一匹配或没有对应投放记录时显示“—”，不分摊其他链接花费。出货源没有 Product ID，按商品日表现中的 SKU 精确关联到 TT、虾皮、Lazada 出货；共用 SKU 会在明细中提示，因此链接间的 SKU 出货量不可直接相加。TT&虾皮gap = TT − 虾皮；总出货 = TT + 虾皮 + Lazada，仅在相应渠道数据完整时计算。</p><p>“—”表示数据未覆盖、源值缺失或分母为 0；“*”表示统计区间内数据不完整，数值为已覆盖日期合计，悬停查看覆盖天数。ROI 仅在分子分母覆盖相同完整区间时计算。无上新日期的链接不纳入新品清单，未来上新链接标记为“待上新”。</p><div id="np-quality"></div></details></section>
+    </main>
+    <!-- ===== End New Products Page ===== -->

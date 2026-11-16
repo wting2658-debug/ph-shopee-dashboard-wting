@@ -9,6 +9,7 @@ from urllib.request import Request, urlopen
 SHEET_ID = "1I_Q-Rx6QklML2023EUG8U1hb4MPN8shyeTyShiXrcYY"
 SHIPMENT_SHEET_ID = "1dwWGTlSeO9cL8NsYQBu3JUmB-H7t02pK16gSIpetl2Y"
 AFFILIATE_SHEET_ID = "1zDffbrbBkPn5oTnOD2xy1MwEFwXczXyLUeRkH7bPeng"
+NEW_PRODUCTS_SHEET_ID = "1l0nGfEPMqBVThzLVBBTZk7ydnRXwvjUaKjagLTEcnIA"
 REPORT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = REPORT_DIR / "data"
 SOURCES = [
@@ -68,6 +69,8 @@ def main() -> None:
         download_source(name, gid, filename, prefix, sheet_id=SHIPMENT_SHEET_ID, required_headers=headers)
     for name, gid, filename, prefix, headers in AFFILIATE_SOURCES:
         download_source(name, gid, filename, prefix, sheet_id=AFFILIATE_SHEET_ID, required_headers=headers)
+    download_source("新品链接映射", "911602533", "new_products_mapping.csv", "Product ID,Variation ID", sheet_id=SHIPMENT_SHEET_ID, required_headers=("Product ID", "Link", "上新时间"))
+    download_source("新品商品日表现", "0", "new_products_daily.csv", "Year,Quarter", sheet_id=NEW_PRODUCTS_SHEET_ID, required_headers=("Item ID", "Date", "Variation ID", "Sales-￥", "Product Impression", "Product Clicks", "Confirmed Order"))
 
 
 if __name__ == "__main__":
