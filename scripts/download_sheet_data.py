@@ -46,9 +46,12 @@ def download_source(name: str, gid: str, filename: str, header_prefix: str, shee
             raise RuntimeError(f"{name} 下载失败：HTTP {response.status}")
         shutil.copyfileobj(response, output)
 
-    with temporary.open("r", encoding="utf-8-sig", errors="replace") as source:
+    with temporary.open("r", encoding="utf-8-sig", errors="replace", newline="") as source:
         first_line = source.readline().strip()
-    parsed_header = next(csv.reader([first_line]))
+        # A quoted header cell can contain a newline; validate the complete
+        # CSV record so required columns after that cell are still visible.
+        source.seek(0)
+        parsed_header = next(csv.reader(source), [])
     if not first_line.startswith(header_prefix) or any(field not in parsed_header for field in required_headers):
         temporary.unlink(missing_ok=True)
         raise RuntimeError(f"{name} 表头不符合预期：{first_line[:120]}")
@@ -71,6 +74,7 @@ def main() -> None:
         download_source(name, gid, filename, prefix, sheet_id=AFFILIATE_SHEET_ID, required_headers=headers)
     download_source("新品链接映射", "911602533", "new_products_mapping.csv", "Product ID,Variation ID", sheet_id=SHIPMENT_SHEET_ID, required_headers=("Product ID", "Link", "上新时间"))
     download_source("新品商品日表现", "0", "new_products_daily.csv", "Year,Quarter", sheet_id=NEW_PRODUCTS_SHEET_ID, required_headers=("Item ID", "Date", "Variation ID", "Sales-￥", "Product Impression", "Product Clicks", "Confirmed Order"))
+    download_source("日报新买家", "1222028246", "daily_shop.csv", "Year,Quarter", sheet_id=SHIPMENT_SHEET_ID, required_headers=("Date", "# of buyers", "# of new buyers", "Units (Add to Cart)"))
 
 
 if __name__ == "__main__":

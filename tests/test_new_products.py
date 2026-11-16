@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from process_new_products_data import load_products, merge_product_day, load_shipments, shipment_day, PERFORMANCE_FIELDS
 from inject_new_products_page import inject_new_products_page, remove_new_products_page
+from inject_daily_report_page import remove_daily_report_page
 
 
 def source_row(variation, **values):
@@ -66,8 +67,8 @@ class NewProductsTests(unittest.TestCase):
 
     def test_existing_sections_identical_and_injection_idempotent(self):
         baseline=subprocess.run(['git','show','HEAD:index.html'],cwd=ROOT,capture_output=True,check=True).stdout.decode('utf-8').replace('\r\n','\n')
-        current=(ROOT/'index.html').read_text('utf-8')
-        self.assertEqual(remove_new_products_page(current),remove_new_products_page(baseline))
+        current=remove_daily_report_page((ROOT/'index.html').read_text('utf-8'))
+        self.assertEqual(remove_new_products_page(current),remove_new_products_page(remove_daily_report_page(baseline)))
         self.assertEqual(inject_new_products_page(current),current)
 
     def test_output_is_unique_and_sources_are_exposed(self):
