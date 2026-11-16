@@ -6,7 +6,8 @@ import csv
 import json
 import math
 import re
-from datetime import date
+from calendar import monthrange
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -254,18 +255,30 @@ def _trend_records(path: Path, *, daily: bool) -> list[dict]:
     return records
 
 
-def _monthly_rollup(daily: list[dict]) -> list[dict]:
+def _monthly_rollup(daily: list[dict], *, as_of: date | None = None) -> list[dict]:
     """按自然月汇总日表，产出本月累计、上月全月与上月同期的 GMV/补贴/补贴率。
 
     累计口径为源表日值直接求和；补贴率为「本月累计补贴 ÷ 本月累计 GMV」，
     与日表逐日补贴率不同，避免按天平均造成偏差。
     """
+    # 日表预填了整月日期及未来日的 0；不能将这些占位行当成已到数。
+    # 源表按 UTC+8 日更，累计最多到昨天，并以最后有业务数据的日行为截止。
+    today = as_of or datetime.now(timezone(timedelta(hours=8))).date()
+    yesterday = (today - timedelta(days=1)).isoformat()
+    activity_fields = ("tt_gmv", "tt_subsidy", "sp_gmv", "sp_subsidy", "lz_gmv")
+    arrived = [r["date"] for r in daily if r["date"] <= yesterday and (
+        any(r.get(key) not in (None, 0) for key in activity_fields)
+        or any(r.get(key) is not None for key in ("tt_rate", "sp_rate")))]
+    if not arrived:
+        return []
+    cutoff = max(arrived)
     buckets: dict[str, list[dict]] = {}
     for record in daily:
-        buckets.setdefault(record["date"][:7], []).append(record)
+        if record["date"] <= cutoff:
+            buckets.setdefault(record["date"][:7], []).append(record)
     months = sorted(buckets)
     rollup = []
-    for index, month in enumerate(months):
+    for month in months:
         rows = sorted(buckets[month], key=lambda item: item["date"])
         entry: dict = {"month": month, "year": int(month[:4]), "month_number": int(month[5:7]),
                        "days": len(rows), "start": rows[0]["date"], "end": rows[-1]["date"]}
@@ -275,16 +288,24 @@ def _monthly_rollup(daily: list[dict]) -> list[dict]:
             entry[f"{channel}_gmv"] = gmv
             entry[f"{channel}_subsidy"] = subsidy
             entry[f"{channel}_rate"] = (subsidy / gmv) if subsidy is not None and gmv else None
-        previous = months[index - 1] if index > 0 else None
+        previous_date = date.fromisoformat(month + "-01") - timedelta(days=1)
+        previous = previous_date.strftime("%Y-%m")
+        previous = previous if previous in buckets else None
         entry["previous_month"] = previous
         entry["previous_days"] = len(buckets[previous]) if previous else 0
         if previous:
             previous_rows = sorted(buckets[previous], key=lambda item: item["date"])
+            same_day = min(int(entry["end"][8:10]), monthrange(previous_date.year, previous_date.month)[1])
+            previous_by_date = {r["date"]: r for r in previous_rows}
+            same_rows = [previous_by_date.get(f"{previous}-{day:02d}", {}) for day in range(1, same_day + 1)]
+            entry["previous_same_start"] = f"{previous}-01"
+            entry["previous_same_end"] = f"{previous}-{same_day:02d}"
+            entry["previous_same_days"] = same_day
             for channel in ("sp", "tt"):
                 full_gmv = _sum_metric(previous_rows, f"{channel}_gmv")
                 full_subsidy = _sum_metric(previous_rows, f"{channel}_subsidy")
-                same_gmv = _sum_metric(previous_rows[:len(rows)], f"{channel}_gmv")
-                same_subsidy = _sum_metric(previous_rows[:len(rows)], f"{channel}_subsidy")
+                same_gmv = _sum_metric(same_rows, f"{channel}_gmv")
+                same_subsidy = _sum_metric(same_rows, f"{channel}_subsidy")
                 entry[f"previous_{channel}_gmv"] = full_gmv
                 entry[f"previous_{channel}_subsidy"] = full_subsidy
                 entry[f"previous_{channel}_rate"] = (full_subsidy / full_gmv) if full_subsidy is not None and full_gmv else None

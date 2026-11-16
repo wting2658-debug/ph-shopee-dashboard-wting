@@ -5225,20 +5225,23 @@ def render_html(payload: dict[str, Any]) -> str:
       const container = document.getElementById('subsidy-rollup');
       if (!latest) { container.innerHTML = '<div class="subsidy-empty">暂无月度累计数据。</div>'; return; }
       const byDate = new Map(SUBSIDY_DATA.daily.map(r => [r.date,r]));
+      const currentDays = new Date(Number(latest.month.slice(0,4)),Number(latest.month.slice(5)),0).getDate();
       const monthDays = [];
-      for (let day = 1; day <= 31; day++) {
+      for (let day = 1; day <= currentDays; day++) {
         const candidate = `${latest.month}-${String(day).padStart(2,'0')}`;
-        if (byDate.has(candidate)) monthDays.push({day, date: candidate});
+        monthDays.push({day, date: candidate});
       }
       const previousMonth = latest.previous_month;
-      const previousDays = monthDays.length;
+      const previousDays = previousMonth ? new Date(Number(previousMonth.slice(0,4)),Number(previousMonth.slice(5)),0).getDate() : 0;
+      // 图表独立保留整月日期，包括上月比本月多出的第 31 日。
+      for (let day = monthDays.length + 1; day <= previousDays; day++) monthDays.push({day,date:''});
       const previousPoints = [];
-      for (let day = 1; day <= previousDays; day++) {
-        const candidate = previousMonth ? `${previousMonth}-${String(day).padStart(2,'0')}` : '';
+      for (let day = 1; day <= monthDays.length; day++) {
+        const candidate = previousMonth && day <= previousDays ? `${previousMonth}-${String(day).padStart(2,'0')}` : '';
         const record = candidate ? byDate.get(candidate) : null;
         previousPoints.push({day, date: candidate, record});
       }
-      const labels = monthDays.map(item => `${Number(latest.month.slice(5))}/${item.day}`);
+      const labels = monthDays.map(item => item.date ? `${Number(latest.month.slice(5))}/${item.day}` : `${item.day}日（上月）`);
       const channelSpec = [
         {key:'tt', name:'TikTok', scope:'旗舰店', gmvColor:'#2f7de1', subsidyColor:'#f47a2a', gmvLabel:'tiktok本月累计', subsidyLabel:'TT-补贴'},
         {key:'sp', name:'Shopee', scope:'旗舰店+店群', gmvColor:'#6a8fe8', subsidyColor:'#f0a05a', gmvLabel:'Shopee本月累计', subsidyLabel:'包含的平台补贴金额'}
@@ -5252,7 +5255,7 @@ def render_html(payload: dict[str, Any]) -> str:
           + subsidyRollupKpi(spec.subsidyLabel, latest[`${spec.key}_subsidy`], latest[`previous_same_${spec.key}_subsidy`], 'amount')
           + subsidyRollupKpi('本月补贴率', latest[`${spec.key}_rate`], latest[`previous_same_${spec.key}_rate`], 'rate');
         return `<div class="subsidy-rollup-card">
-          <div class="subsidy-rollup-head"><div><h3>${spec.name}渠道<span class="subsidy-rollup-scope">（${spec.scope}）</span></h3><div class="subsidy-rollup-scope">本月 ${latest.start} → ${latest.end}（已到 ${latest.days} 天） · 上月 ${previousMonth || '—'} 全月 ${latest.previous_days} 天</div></div></div>
+          <div class="subsidy-rollup-head"><div><h3>${spec.name}渠道<span class="subsidy-rollup-scope">（${spec.scope}）</span></h3><div class="subsidy-rollup-scope">本月 ${latest.start} → ${latest.end} · 上月同期 ${latest.previous_same_start || '—'} → ${latest.previous_same_end || '—'}</div></div></div>
           <div class="subsidy-rollup-kpis">${kpis}</div>
           <div class="subsidy-rollup-chart" data-chart-wrap><canvas id="chart-subsidy-rollup-${spec.key}"></canvas></div>
           <div class="subsidy-rollup-note">实线为本月逐日 GMV 与补贴，虚线为上月同期逐日；上方指标为本月累计与上月同期累计对比，补贴率 = 累计补贴 ÷ 累计 GMV。</div>
@@ -5272,8 +5275,8 @@ def render_html(payload: dict[str, Any]) -> str:
         const dateSets = [monthDays.map(i=>i.date),previousPoints.map(i=>i.date||''),monthDays.map(i=>i.date),previousPoints.map(i=>i.date||'')];
         upsertChart(`chart-subsidy-rollup-${spec.key}`,{type:'line',data:{labels,datasets},options:subsidyChartOptions(false,dateSets,true)});
       });
-      document.getElementById('subsidy-rollup-range').textContent = `本月 ${latest.start} → ${latest.end}（已到 ${latest.days} 天，按日更新） · 对比上月 ${previousMonth || '—'} 同期间逐日与上月全月累计 · 环比以「本月累计 vs 上月同期累计」计算`;
-      document.getElementById('subsidy-rollup-source').innerHTML = `数据源：<a href="${subsidyText(SUBSIDY_DATA.sources.daily)}" target="_blank" rel="noopener">日 GMV 与补贴工作表</a> · 金额单位：人民币 · 本月累计 ${subsidyNumber(latest.tt_gmv + latest.sp_gmv)} 元（TT + Shopee）；上月全月累计 ${subsidyNumber(latest.previous_tt_gmv + latest.previous_sp_gmv)} 元。补贴率按「累计补贴 ÷ 累计 GMV」计算，不对日补贴率取平均；本月未满月，累计值会随每日刷新增长，环比为进行时对比。`;
+      document.getElementById('subsidy-rollup-range').textContent = `本月 ${latest.start} → ${latest.end}（已到 ${latest.days} 天，按日更新） · 环比对比上月同期 ${latest.previous_same_start || '—'} → ${latest.previous_same_end || '—'} · 下方趋势保留上月全月`;
+      document.getElementById('subsidy-rollup-source').innerHTML = `数据源：<a href="${subsidyText(SUBSIDY_DATA.sources.daily)}" target="_blank" rel="noopener">日 GMV 与补贴工作表</a> · 金额单位：人民币 · 本月累计 ${subsidyNumber(latest.tt_gmv + latest.sp_gmv)} 元（TT + Shopee）；上月同期累计 ${subsidyNumber(subsidySum([latest.previous_same_tt_gmv, latest.previous_same_sp_gmv]))} 元。补贴率按「累计补贴 ÷ 累计 GMV」计算，不对日补贴率取平均；累计与环比按已到数截止日同步更新，趋势图保留上月全月。`;
     }
     function renderSubsidyMonthly() {      const rows = SUBSIDY_DATA.monthly, labels = rows.map(r => r.month);
       const channelSets = (metric) => [['sp','Shopee','#f47a2a'],['tt','TikTok','#2989ae']].map(([key,label,color]) => ({label,data:rows.map(r => r[`${key}_${metric}`]),borderColor:color,backgroundColor:color,borderWidth:2.3,tension:.25,pointRadius:3,pointHoverRadius:6,spanGaps:false,fill:false}));
