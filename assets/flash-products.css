@@ -1,0 +1,25 @@
+#flash-page .flash-products{margin-top:18px}
+#flash-page .flash-table-wrap{overflow-x:auto;margin-top:16px;border:1px solid #d7e3f0;border-radius:10px}
+#flash-page .flash-table{width:100%;border-collapse:collapse;font-size:14px}
+#flash-page .flash-table th{background:#e7f1fc;text-align:left;color:#263a53}
+#flash-page .flash-table th,#flash-page .flash-table td{padding:14px 16px;border-bottom:1px solid #e5ebf2}
+#flash-page .flash-table tr:nth-child(even){background:#f8fbfe}
+#flash-page .flash-table th button{font:inherit;font-weight:700;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+#flash-page .flash-table th button span{color:#2787a0;margin-left:6px}
+#flash-page .flash-change{font-size:12px;font-weight:700}
+#flash-page .flash-change.positive{color:#15966a}
+#flash-page .flash-change.negative{color:#df4f53}
+#flash-page .flash-change.neutral{color:#667c93}
+#flash-page .flash-table{table-layout:fixed}
+#flash-page .flash-table th,#flash-page .flash-table td{text-align:center;vertical-align:middle}
+#flash-page .flash-table th:first-child,#flash-page .flash-table td:first-child{width:23%}
+#flash-page .flash-table th:nth-child(2),#flash-page .flash-table td:nth-child(2){width:12%}
+#flash-page .flash-table th:nth-child(n+3),#flash-page .flash-table td:nth-child(n+3){width:16.25%}
+#flash-page .flash-table th button{font-size:15px}
+#flash-page .flash-table td{font-size:15px}
+#flash-page .flash-table td strong{font-size:16px}
+#flash-page .flash-product-link{display:block;width:min(100%,220px);margin:auto;padding:7px 12px;border:1px solid #d4e3f2;border-radius:999px;background:#f8fbff;color:#263a53;font:inherit;font-weight:650;cursor:pointer;text-align:center;overflow-wrap:anywhere;transition:background .15s,border-color .15s,color .15s}
+#flash-page .flash-product-link:hover{border-color:#91c6f3;background:#eef7ff}
+#flash-page .flash-product-link.is-selected{border-color:#68b3f6;background:#dceeff;color:#176294;box-shadow:inset 0 0 0 1px #b9defd}
+#flash-page .flash-product-link:focus-visible{outline:2px solid #2787e7;outline-offset:2px}
+

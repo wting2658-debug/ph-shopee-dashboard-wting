@@ -47,6 +47,9 @@ jobs:
       - name: Process affiliate data
         run: python process_affiliate_data.py
 
+      - name: Process flash data
+        run: python process_flash_data.py
+
       - name: Process new product data
         run: python process_new_products_data.py
 
@@ -60,7 +63,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html shipment_data.json subsidy_data.json live_data.json assets/affiliate-data.json assets/new-products-data.json assets/daily-report-data.json
+          git add index.html shipment_data.json subsidy_data.json live_data.json assets/affiliate-data.json assets/flash-data.json assets/new-products-data.json assets/daily-report-data.json
           if git diff --cached --quiet; then
             echo "Dashboard is already up to date."
             exit 0

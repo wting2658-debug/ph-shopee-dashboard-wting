@@ -1707,6 +1707,7 @@ body.competitor-mode { height:100vh; height:100dvh; overflow:hidden; }
         <button class="dashboard-tab" type="button" data-dashboard-page="shipment">出货分析</button>
         <button class="dashboard-tab" type="button" data-dashboard-page="live">直播板块</button>
         <button class="dashboard-tab" type="button" data-dashboard-page="affiliate">联盟板块</button>
+        <button class="dashboard-tab" type="button" data-dashboard-page="flash">闪购板块</button>
         <button class="dashboard-tab" type="button" data-dashboard-page="new-products">新品专区</button>
         <button class="dashboard-tab daily-report-tab" type="button" data-dashboard-page="daily-report">日报</button>
         <button class="dashboard-tab competitor-tab" type="button" data-dashboard-page="competitor">竞品监控</button>
@@ -2131,6 +2132,41 @@ body.competitor-mode { height:100vh; height:100dvh; overflow:hidden; }
       <iframe id="competitor-frame" title="菲律宾竞品监控：月度排名与机会分析" data-src="assets/competitor/index.html?embedded=1#self" referrerpolicy="no-referrer"></iframe>
     </main>
     <!-- ===== End Competitor Page ===== -->
+    <main class="dashboard-page" id="flash-page" hidden>
+      <section class="flash-panel">
+        <h2 class="panel-title">Shopee · 闪购概览</h2>
+        <div class="flash-filters">
+          <label>类目<select id="flash-category"><option value="">全部类目</option></select></label>
+          <label>商品<select id="flash-product"><option value="">全部商品</option></select></label>
+          <label>闪购渠道<select id="flash-channel"><option value="">全部渠道</option></select></label>
+          <label>对比方式<select id="flash-compare"><option value="custom">顶部对比日期</option><option value="month">上月同期（自动）</option></select></label>
+        </div>
+        <p class="flash-note">店铺 GMV 与闪购 GMV 来自“闪购-by day”；坑位按“闪购明细”每日取一次。</p>
+        <div id="flash-status" class="flash-note" role="status">正在加载闪购数据…</div>
+      </section>
+      <section class="flash-kpis" id="flash-kpis" aria-label="闪购核心指标"></section>
+      <div class="flash-charts">
+        <section class="flash-panel"><h2 class="panel-title">各品类闪购GMV及闪购占比 <small>· 全店品类全景</small></h2><p class="flash-note">柱=闪购GMV，折线=闪购占品类GMV% ｜ 本图为全店品类横向对比，不随单品筛选变化</p><div class="flash-chart"><canvas id="flash-category-chart" role="img" aria-label="各品类闪购销售额及占比"></canvas></div></section>
+        <section class="flash-panel"><h2 class="panel-title">每日坑位数 &amp; 闪购GMV趋势</h2><p class="flash-note">柱=每日闪购GMV，折线=每日闪购坑位数</p><p class="flash-note" id="flash-trend-selection">当前显示：全店闪购数据</p><div class="flash-chart"><canvas id="flash-daily-chart" role="img" aria-label="每日闪购销售额与坑位数趋势"></canvas></div></section>
+      </div>
+      <section class="flash-panel flash-products">
+        <h2 class="panel-title">闪购产品明细</h2>
+        <p class="flash-note">按当前查询期统计；点击列标题可切换升序、降序。环比使用顶部对比日期。</p>
+        <div class="flash-table-wrap">
+          <table class="flash-table">
+            <thead><tr>
+              <th><button type="button" data-flash-sort="product">产品 <span></span></button></th>
+              <th><button type="button" data-flash-sort="category">品类 <span></span></button></th>
+              <th><button type="button" data-flash-sort="gmv">闪购GMV <span></span></button></th>
+              <th><button type="button" data-flash-sort="slots">坑位数 <span></span></button></th>
+              <th><button type="button" data-flash-sort="output">坑产 <span></span></button></th>
+              <th><button type="button" data-flash-sort="share">闪购占比 <span></span></button></th>
+            </tr></thead>
+            <tbody id="flash-product-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
     <!-- ===== Affiliate Page ===== -->
     <main class="dashboard-page" id="affiliate-page" hidden>
       <section class="panel af-intro">
@@ -4738,6 +4774,7 @@ body.competitor-mode { height:100vh; height:100dvh; overflow:hidden; }
       document.getElementById('new-products-page').hidden = state.activePage !== 'new-products';
       document.body.classList.toggle('new-products-mode', state.activePage === 'new-products');
       document.getElementById('affiliate-page').hidden = state.activePage !== 'affiliate';
+      document.getElementById('flash-page').hidden = state.activePage !== 'flash';
       document.body.classList.toggle('affiliate-mode', state.activePage === 'affiliate');
       document.getElementById('competitor-page').hidden = state.activePage !== 'competitor';
       syncCompetitorShell();
@@ -4746,6 +4783,7 @@ body.competitor-mode { height:100vh; height:100dvh; overflow:hidden; }
       });
       if (state.activePage === 'competitor') { renderCompetitorPage(); return; }
       if (state.activePage === 'affiliate') { renderAffiliatePage(); return; }
+      if (state.activePage === 'flash') { window.renderFlashPage?.(); return; }
       if (state.activePage === 'new-products') { renderNewProductsPage(); return; }
       if (state.activePage === 'daily-report') { renderDailyReportPage(); return; }
       if (state.activePage === 'meta') {
@@ -6458,5 +6496,12 @@ syncDateInputs();    syncDateInputs();
 renderFilters();
     renderAll();
   </script>
+  <link rel="stylesheet" href="assets/flash.css">
+  <link rel="stylesheet" href="assets/flash-charts.css">
+  <link rel="stylesheet" href="assets/flash-products.css">
+  <link rel="stylesheet" href="assets/flash-kpi.css">
+  <script src="assets/flash.js"></script>
+  <script src="assets/flash-charts.js"></script>
+  <script src="assets/flash-products.js"></script>
 </body>
 </html>

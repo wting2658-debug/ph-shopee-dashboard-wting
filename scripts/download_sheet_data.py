@@ -10,6 +10,7 @@ SHEET_ID = "1I_Q-Rx6QklML2023EUG8U1hb4MPN8shyeTyShiXrcYY"
 SHIPMENT_SHEET_ID = "1dwWGTlSeO9cL8NsYQBu3JUmB-H7t02pK16gSIpetl2Y"
 AFFILIATE_SHEET_ID = "1zDffbrbBkPn5oTnOD2xy1MwEFwXczXyLUeRkH7bPeng"
 NEW_PRODUCTS_SHEET_ID = "1l0nGfEPMqBVThzLVBBTZk7ydnRXwvjUaKjagLTEcnIA"
+FLASH_PUBLISHED_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQKF2KfgQeeGnMGkVIxM4viADe_msqvW-B33j_2n6_Kb7J7g5Tr5etUNjil12D4ywSflE4U7zjjnIyo/pub"
 REPORT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = REPORT_DIR / "data"
 SOURCES = [
@@ -61,6 +62,19 @@ def download_source(name: str, gid: str, filename: str, header_prefix: str, shee
 
 def main() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    for name, gid, filename, headers in [
+        ("闪购明细", "0", "flash_detail.csv", ("日期", "类目", "产品", "坑位-by da")),
+        ("闪购日表", "1514230346", "flash_by_day.csv", ("Date", "Shop GMV-￥", "FS-Sales-￥")),
+    ]:
+        destination = DATA_DIR / filename
+        request = Request(f"{FLASH_PUBLISHED_URL}?gid={gid}&single=true&output=csv", headers={"User-Agent": "PH-Shopee-Dashboard-Refresh/1.0"})
+        with urlopen(request, timeout=300) as response, destination.open("wb") as output:
+            shutil.copyfileobj(response, output)
+        with destination.open(encoding="utf-8-sig", newline="") as source:
+            header = next(csv.reader(source), [])
+        if any(not any(cell.strip().startswith(required) for cell in header) for required in headers):
+            destination.unlink(missing_ok=True)
+            raise RuntimeError(f"{name} 表头不符合预期：{header[:15]}")
     for source in SOURCES:
         download_source(*source)
     # Download shipment data from separate sheet

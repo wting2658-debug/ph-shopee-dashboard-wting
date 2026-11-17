@@ -1,0 +1,5 @@
+#flash-page .flash-kpi-change{margin-top:10px;font-size:15px;font-weight:700}
+#flash-page .flash-kpi-change.positive{color:#15966a}
+#flash-page .flash-kpi-change.negative{color:#df4f53}
+#flash-page .flash-kpi-change.neutral{color:#667c93}
+
