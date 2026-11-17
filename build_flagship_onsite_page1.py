@@ -13,6 +13,7 @@ from process_subsidy_data import load_subsidy_json
 from inject_live_page import inject_live_page
 from inject_competitor_page import inject_competitor_page
 from inject_affiliate_page import inject_affiliate_page
+from inject_flash_page import inject_flash_page
 from inject_new_products_page import inject_new_products_page
 from inject_daily_report_page import inject_daily_report_page
 
@@ -5581,7 +5582,7 @@ renderFilters();
     html = html.replace("__PAYLOAD_JSON__", payload_json)
     html = html.replace("__SHIPMENT_JSON__", load_shipment_json())
     html = html.replace("__SUBSIDY_JSON__", load_subsidy_json())
-    return inject_daily_report_page(inject_new_products_page(inject_affiliate_page(inject_competitor_page(inject_live_page(html)))))
+    return inject_flash_page(inject_daily_report_page(inject_new_products_page(inject_affiliate_page(inject_competitor_page(inject_live_page(html))))))
 
 
 def generate_report(

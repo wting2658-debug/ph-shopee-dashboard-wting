@@ -1,0 +1,6 @@
+#flash-page .flash-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px}
+#flash-page .flash-charts .flash-panel{min-width:0}
+#flash-page .flash-chart{position:relative;height:390px;margin-top:16px}
+#flash-page .flash-charts .panel-title small{font-size:13px;color:#667c93;font-weight:400}
+@media(max-width:1000px){#flash-page .flash-charts{grid-template-columns:1fr}}
+
