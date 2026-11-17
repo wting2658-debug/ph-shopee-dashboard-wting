@@ -31,7 +31,6 @@ AFFILIATE_SOURCES = [
     ("联盟商品明细", "1684158147", "affiliate_products.csv", "Year,Quarter", ("Product ID", "Channel", "Order Type", "Sales (Local Currency)")),
     ("联盟店铺日表", "1971481596", "affiliate_shop.csv", "Year,Quarter", ("Shop ID", "Order Type", "Orders")),
     ("联盟汇率", "337285465", "affiliate_rates.csv", "Year,Month", ("汇率",)),
-    ("联盟店铺GMV", "1810541072", "affiliate_gmv.csv", "", ("Sales-￥", "Date")),
 ]
 
 
@@ -74,7 +73,7 @@ def main() -> None:
         download_source(name, gid, filename, prefix, sheet_id=AFFILIATE_SHEET_ID, required_headers=headers)
     download_source("新品链接映射", "911602533", "new_products_mapping.csv", "Product ID,Variation ID", sheet_id=SHIPMENT_SHEET_ID, required_headers=("Product ID", "Link", "上新时间"))
     download_source("新品商品日表现", "0", "new_products_daily.csv", "Year,Quarter", sheet_id=NEW_PRODUCTS_SHEET_ID, required_headers=("Item ID", "Date", "Variation ID", "Sales-￥", "Product Impression", "Product Clicks", "Confirmed Order"))
-    download_source("日报新买家", "1222028246", "daily_shop.csv", "Year,Quarter", sheet_id=SHIPMENT_SHEET_ID, required_headers=("Date", "# of buyers", "# of new buyers", "Units (Add to Cart)"))
+    download_source("日报店铺及联盟GMV", "1222028246", "daily_shop.csv", "Year,Quarter", sheet_id=SHIPMENT_SHEET_ID, required_headers=("Date", "# of buyers", "# of new buyers", "Units (Add to Cart)", "Sales Confirmed", "汇率"))
 
 
 if __name__ == "__main__":

@@ -4340,21 +4340,26 @@ body.competitor-mode { height:100vh; height:100dvh; overflow:hidden; }
       return { 'X-Refresh-Key': refreshKey };
     }
 
-    async function pollRefreshJob(jobId, headers) {
-      for (let attempt = 0; attempt < 180; attempt += 1) {
-        const response = await fetch(`${REFRESH_ENDPOINT}?job_id=${encodeURIComponent(jobId)}`, {
+    async function pollRefreshJob(jobId, headers, runId, afterRunId) {
+      for (let attempt = 0; attempt < 420; attempt += 1) {
+        const query = new URLSearchParams({ job_id: jobId });
+        if (runId) query.set('run_id', runId);
+        if (afterRunId) query.set('after_run_id', afterRunId);
+        const response = await fetch(`${REFRESH_ENDPOINT}?${query}`, {
           cache: 'no-store',
           headers,
         });
         if (response.status === 401) window.sessionStorage.removeItem('dashboard-refresh-key');
         if (!response.ok) throw new Error(`刷新服务返回 ${response.status}`);
         const job = await response.json();
+        if (job.run_id) runId = job.run_id;
         if (job.status === 'complete') {
           window.location.reload();
           return;
         }
         if (job.status === 'error') throw new Error(job.error || '数据刷新失败');
-        await new Promise(resolve => window.setTimeout(resolve, 2000));
+        setRefreshState(job.status === 'publishing' ? '正在发布' : job.status === 'downloading' ? '正在拉取数据' : '正在生成看板', 'busy');
+        await new Promise(resolve => window.setTimeout(resolve, 5000));
       }
       throw new Error('刷新等待超时');
     }
@@ -4370,7 +4375,7 @@ body.competitor-mode { height:100vh; height:100dvh; overflow:hidden; }
         if (!response.ok) throw new Error(`刷新服务不可用（${response.status}）`);
         const job = await response.json();
         if (!job.job_id) throw new Error(job.error || '刷新服务未返回任务编号');
-        await pollRefreshJob(job.job_id, headers);
+        await pollRefreshJob(job.job_id, headers, job.run_id, job.after_run_id);
       } catch (error) {
         setRefreshState('更新失败', 'error');
         const localHint = isLocalDashboard()

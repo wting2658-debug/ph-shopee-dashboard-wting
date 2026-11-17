@@ -10,6 +10,7 @@ import json
 import math
 from collections import defaultdict
 from datetime import datetime, timedelta, date
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -40,6 +41,42 @@ def day(value):
 def read_csv(path):
     with path.open(encoding='utf-8-sig', newline='') as source:
         return list(csv.reader(source))
+
+
+def shop_gmv_rows_from_daily_shop(rows):
+    """Reconstruct the former F:G GMV export from the same confirmed-sales source.
+
+    The old affiliate GMV worksheet was removed. Its daily CNY values match
+    Sales Confirmed / FX in the shop-day source at Google CSV's ten significant
+    digits; that source's Sales-￥ column is rounded to whole yuan instead.
+    """
+    if not rows:
+        raise ValueError('Daily shop export is empty')
+    header = [cell.strip() for cell in rows[0]]
+    required = ('Date', 'Sales Confirmed', '汇率', 'Units (Add to Cart)')
+    missing = [name for name in required if name not in header]
+    if missing:
+        raise ValueError(f'Daily shop export missing GMV columns: {missing}')
+    indices = {name: header.index(name) for name in required}
+    result = [['', '', '', '', '', 'Sales-￥', 'Date']]
+    for row in rows[1:]:
+        cell = lambda name: row[indices[name]].strip() if len(row) > indices[name] else ''
+        # Monthly totals reuse the first date of the month, and future template
+        # rows have no confirmed sales. Neither is a daily GMV observation.
+        if cell('Units (Add to Cart)') == '/' or not cell('Sales Confirmed'):
+            continue
+        d = day(cell('Date'))
+        try:
+            sales = Decimal(cell('Sales Confirmed').replace(',', ''))
+            fx = Decimal(cell('汇率').replace(',', ''))
+        except InvalidOperation:
+            raise ValueError(f'Invalid daily shop sales/FX at {d}') from None
+        if not sales.is_finite() or not fx.is_finite() or fx <= 0:
+            raise ValueError(f'Invalid daily shop sales/FX at {d}')
+        result.append(['', '', '', '', '', format(sales / fx, '.10g'), d])
+    if len(result) == 1:
+        raise ValueError('Daily shop export contains no daily GMV records')
+    return result
 
 
 def build_data(product_rows, shop_rows, rate_rows, gmv_rows):
@@ -133,7 +170,10 @@ def build_data(product_rows, shop_rows, rate_rows, gmv_rows):
 
 def main():
     data = ROOT / 'data'
-    result = build_data(*(read_csv(data / f'affiliate_{name}.csv') for name in ('products', 'shop', 'rates', 'gmv')))
+    result = build_data(
+        *(read_csv(data / f'affiliate_{name}.csv') for name in ('products', 'shop', 'rates')),
+        shop_gmv_rows_from_daily_shop(read_csv(data / 'daily_shop.csv')),
+    )
     output = ROOT / 'assets/affiliate-data.json'
     output.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':'), allow_nan=False)+'\n', encoding='utf-8')
     print(json.dumps({'coverage': result['coverage'], 'rows': len(result['rows']), 'products': len(result['products']), 'bytes': output.stat().st_size, 'reconciliation_warnings': len(result['audit']['shop_reconciliation_differences'])}))

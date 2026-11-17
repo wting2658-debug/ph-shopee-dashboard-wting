@@ -2,8 +2,9 @@ name: Refresh dashboard data
 
 on:
   schedule:
-    # 每天北京时间 06:00 刷新数据（UTC 22:00 前一日）
-    - cron: "0 22 * * *"
+    # 每天北京时间 10:00（UTC 02:00）刷新除竞品监控外的所有看板。
+    # 重新下载全部业务数据源，按各源最新可用日期重建，成功后自动部署线上。
+    - cron: "0 2 * * *"
   workflow_dispatch:
 
 permissions:
