@@ -13,8 +13,8 @@
 #daily-report-page .dp-intro h2 { margin:5px 0; font-size:28px; }
 #daily-report-page .dp-muted { color:#73879b; font-size:13px; line-height:1.8; }
 #daily-report-page .dp-legend { display:flex; align-items:center; flex-wrap:wrap; gap:20px; font-size:13px; color:#73879b; }
-#daily-report-page .dp-legend i { display:inline-block; width:23px; border-top:3px solid #f47a2a; margin-right:7px; vertical-align:middle; }
-#daily-report-page .dp-legend i.dp-dashed { border-color:#9aabbc; border-top-style:dashed; }
+#daily-report-page .dp-legend i { display:inline-block; width:23px; border-top:3px solid #2787e7; margin-right:7px; vertical-align:middle; }
+#daily-report-page .dp-legend i.dp-dashed { border-color:#9bbde6; border-top-style:dashed; }
 #daily-report-page .dp-section { margin-bottom:28px; min-width:0; }
 #daily-report-page .dp-section-title { display:flex; align-items:center; gap:11px; font-size:20px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #dce5ee; }
 #daily-report-page .dp-section-title>span { background:#e5edff; color:#3262eb; border-radius:6px; font-size:13px; padding:5px 7px; }

@@ -97,8 +97,9 @@ function dpRenderOverview() {
 }
 function dpChart(id,currentDates,previousDates,valueOf,kind='number') {
   const length=Math.max(currentDates.length,previousDates.length),indexes=Array.from({length},(_,i)=>i),sets=[currentDates,previousDates];
+  const currentChartColor='#2787e7',compareChartColor='#9bbde6';
   const compact=value=>kind==='percent'?(Number(value)*100).toFixed(1)+'%':Math.abs(value)>=10000?(value/10000).toFixed(1)+'万':dpFormat(value);
-  upsertChart(id,{type:'line',data:{labels:indexes.map(i=>(currentDates[i]||previousDates[i]||'').slice(5)),datasets:sets.map((dates,i)=>({label:i?'对比期':'本期',data:indexes.map(n=>dates[n]?valueOf(dates[n]):null),borderColor:i?'#9aabbc':'#f47a2a',backgroundColor:i?'#9aabbc':'#f47a2a',borderDash:i?[5,5]:[],borderWidth:i?2:2.8,pointRadius:0,pointHitRadius:10,tension:.22,spanGaps:false}))},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{title:items=>items.length?'区间第 '+(items[0].dataIndex+1)+' 天':'',label:ctx=>`${ctx.dataset.label} · ${sets[ctx.datasetIndex][ctx.dataIndex]??'—'}：${dpFormat(ctx.parsed.y,kind)}`}}},scales:{x:{grid:{display:false},ticks:{color:'#7c8fa3',maxTicksLimit:5,maxRotation:0,font:{size:11}}},y:{beginAtZero:true,grid:{color:'#edf2f6'},ticks:{color:'#7c8fa3',maxTicksLimit:4,font:{size:11},callback:compact}}}}});
+  upsertChart(id,{type:'line',data:{labels:indexes.map(i=>(currentDates[i]||previousDates[i]||'').slice(5)),datasets:sets.map((dates,i)=>({label:i?'对比期':'本期',data:indexes.map(n=>dates[n]?valueOf(dates[n]):null),borderColor:i?compareChartColor:currentChartColor,backgroundColor:i?compareChartColor:currentChartColor,borderDash:i?[5,5]:[],borderWidth:i?2:2.8,pointRadius:0,pointHitRadius:10,tension:.22,spanGaps:false}))},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{title:items=>items.length?'区间第 '+(items[0].dataIndex+1)+' 天':'',label:ctx=>`${ctx.dataset.label} · ${sets[ctx.datasetIndex][ctx.dataIndex]??'—'}：${dpFormat(ctx.parsed.y,kind)}`}}},scales:{x:{grid:{display:false},ticks:{color:'#7c8fa3',maxTicksLimit:5,maxRotation:0,font:{size:11}}},y:{beginAtZero:true,grid:{color:'#edf2f6'},ticks:{color:'#7c8fa3',maxTicksLimit:4,font:{size:11},callback:compact}}}}});
 }
 const DP_EXPENSE_METRICS=[
   ['onsite-spend','站内花费','adSpend','money'],
@@ -236,7 +237,8 @@ function dpRender() {
   dpEl('dp-status').innerHTML='';
   dpEl('dp-download-image').disabled=dpExportBusy;
   dpRenderOverview();
-  dpEl('dp-fee-kpis').innerHTML=DP_EXPENSE_METRICS.map(([,label,key,kind])=>dpMetricCard(label,total?.[key],compareTotal?.[key],kind)).join('');
+  const expenseKpis=[...DP_EXPENSE_METRICS.slice(0,2),['onsite-roi','站内 ROI','adROI','ratio'],...DP_EXPENSE_METRICS.slice(2),['offsite-roi','站外 ROI','metaROAS','ratio']];
+  dpEl('dp-fee-kpis').innerHTML=expenseKpis.map(([,label,key,kind])=>dpMetricCard(label,total?.[key],compareTotal?.[key],kind)).join('');
   dpEl('dp-store-kpis').innerHTML=[['Sales￥','gmv','money'],['订单量','orders','number'],['点击量','clicks','number'],['点击率','clickRate','percent'],['转化率','conversion','percent']].map(([label,key,kind])=>dpMetricCard(label,total?.[key],compareTotal?.[key],kind)).join('')+dpMetricCard('新买家',buyers.newBuyers,compareBuyers.newBuyers,'number');
   dpRenderCharts(current,previous,byDay,channelByDay);
   dpRenderRecent(current,byDay,channelByDay,data.shop);

@@ -1528,8 +1528,8 @@ body.competitor-mode { height:100vh; height:100dvh; overflow:hidden; }
 #daily-report-page .dp-intro h2 { margin:5px 0; font-size:28px; }
 #daily-report-page .dp-muted { color:#73879b; font-size:13px; line-height:1.8; }
 #daily-report-page .dp-legend { display:flex; align-items:center; flex-wrap:wrap; gap:20px; font-size:13px; color:#73879b; }
-#daily-report-page .dp-legend i { display:inline-block; width:23px; border-top:3px solid #f47a2a; margin-right:7px; vertical-align:middle; }
-#daily-report-page .dp-legend i.dp-dashed { border-color:#9aabbc; border-top-style:dashed; }
+#daily-report-page .dp-legend i { display:inline-block; width:23px; border-top:3px solid #2787e7; margin-right:7px; vertical-align:middle; }
+#daily-report-page .dp-legend i.dp-dashed { border-color:#9bbde6; border-top-style:dashed; }
 #daily-report-page .dp-section { margin-bottom:28px; min-width:0; }
 #daily-report-page .dp-section-title { display:flex; align-items:center; gap:11px; font-size:20px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #dce5ee; }
 #daily-report-page .dp-section-title>span { background:#e5edff; color:#3262eb; border-radius:6px; font-size:13px; padding:5px 7px; }
@@ -2270,7 +2270,7 @@ body.competitor-mode { height:100vh; height:100dvh; overflow:hidden; }
       </section>
       <section class="dp-section">
         <h2 class="dp-section-title"><span>02</span>费用情况</h2>
-        <div id="dp-fee-kpis" class="dp-grid dp-four"></div>
+        <div id="dp-fee-kpis" class="dp-grid dp-six"></div>
         <div class="dp-grid dp-four dp-trends">
           <article class="dp-chart-card"><h3>站内花费（¥）</h3><div class="dp-chart" data-chart-wrap><canvas id="dp-chart-onsite-spend" aria-label="站内花费趋势" role="img"></canvas></div></article>
           <article class="dp-chart-card"><h3>站内费比</h3><div class="dp-chart" data-chart-wrap><canvas id="dp-chart-onsite-fee" aria-label="站内费比趋势" role="img"></canvas></div></article>
@@ -2295,7 +2295,7 @@ body.competitor-mode { height:100vh; height:100dvh; overflow:hidden; }
         <div class="dp-section-head"><h2 class="dp-section-title"><span>04</span>虾皮 TOP10 链接</h2><p class="dp-muted">按本期 Sales 选出前 10 个链接 · 点击表头排序 · 横向滚动查看站内外指标</p></div>
         <div class="dp-table-card"><div class="dp-product-legend" aria-label="表格数据分组"><span class="dp-legend-store">店铺数据</span><span class="dp-legend-onsite">站内投放</span><span class="dp-legend-offsite">站外投放</span></div><div class="dp-scroll dp-top-scroll"><table id="dp-top-products" class="dp-table dp-product-table"></table></div></div>
       </section>
-      <section class="dp-panel dp-methods"><details><summary>统计口径与数据来源</summary><p>Sales、订单量、访客、点击、点击率及转化率沿用“店铺分析”的全店产品汇总口径；点击率 = 产品点击 ÷ 产品访客，转化率 = 订单量 ÷ 产品点击。新买家取店铺日表“# of new buyers”，跨日期为每日人数之和；新买家占比 = 新买家 ÷ 买家。源表月度汇总行不计入每日数据。</p><p>站内花费取 Shopee 站内广告花费，站外花费取 Meta 广告花费，金额统一为人民币；站内费比 = 站内花费 ÷ 店铺 Sales；站外费比 = 站外花费 ÷ 店铺 Sales。累计费比按累计花费 ÷ 累计 Sales 计算，趋势展示每日花费及费比。</p><p>销售概览沿用源表的月目标、累计达成与上月同期值；平台销售和补贴趋势沿用渠道补贴日表。近 7 天截至查询结束日；趋势按区间第 N 天对齐，对比期保留完整所选区间。缺失数据留空，不按 0 处理。</p><div id="dp-sources"></div></details></section>
+      <section class="dp-panel dp-methods"><details><summary>统计口径与数据来源</summary><p>Sales、订单量、访客、点击、点击率及转化率沿用“店铺分析”的全店产品汇总口径；点击率 = 产品点击 ÷ 产品访客，转化率 = 订单量 ÷ 产品点击。新买家取店铺日表“# of new buyers”，跨日期为每日人数之和；新买家占比 = 新买家 ÷ 买家。源表月度汇总行不计入每日数据。</p><p>站内花费取 Shopee 站内广告花费，站外花费取 Meta 广告花费，金额统一为人民币；站内费比 = 站内花费 ÷ 店铺 Sales；站外费比 = 站外花费 ÷ 店铺 Sales。站内 ROI = 站内广告 Sales ÷ 站内花费；站外 ROI = 站外广告 Sales ÷ 站外花费，均按所选区间累计值计算。累计费比按累计花费 ÷ 累计 Sales 计算，趋势展示每日花费及费比。</p><p>销售概览沿用源表的月目标、累计达成与上月同期值；平台销售和补贴趋势沿用渠道补贴日表。近 7 天截至查询结束日；趋势按区间第 N 天对齐，对比期保留完整所选区间。缺失数据留空，不按 0 处理。</p><div id="dp-sources"></div></details></section>
     </main>
     <!-- ===== End Daily Report Page ===== -->
 
@@ -6045,8 +6045,9 @@ function dpRenderOverview() {
 }
 function dpChart(id,currentDates,previousDates,valueOf,kind='number') {
   const length=Math.max(currentDates.length,previousDates.length),indexes=Array.from({length},(_,i)=>i),sets=[currentDates,previousDates];
+  const currentChartColor='#2787e7',compareChartColor='#9bbde6';
   const compact=value=>kind==='percent'?(Number(value)*100).toFixed(1)+'%':Math.abs(value)>=10000?(value/10000).toFixed(1)+'万':dpFormat(value);
-  upsertChart(id,{type:'line',data:{labels:indexes.map(i=>(currentDates[i]||previousDates[i]||'').slice(5)),datasets:sets.map((dates,i)=>({label:i?'对比期':'本期',data:indexes.map(n=>dates[n]?valueOf(dates[n]):null),borderColor:i?'#9aabbc':'#f47a2a',backgroundColor:i?'#9aabbc':'#f47a2a',borderDash:i?[5,5]:[],borderWidth:i?2:2.8,pointRadius:0,pointHitRadius:10,tension:.22,spanGaps:false}))},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{title:items=>items.length?'区间第 '+(items[0].dataIndex+1)+' 天':'',label:ctx=>`${ctx.dataset.label} · ${sets[ctx.datasetIndex][ctx.dataIndex]??'—'}：${dpFormat(ctx.parsed.y,kind)}`}}},scales:{x:{grid:{display:false},ticks:{color:'#7c8fa3',maxTicksLimit:5,maxRotation:0,font:{size:11}}},y:{beginAtZero:true,grid:{color:'#edf2f6'},ticks:{color:'#7c8fa3',maxTicksLimit:4,font:{size:11},callback:compact}}}}});
+  upsertChart(id,{type:'line',data:{labels:indexes.map(i=>(currentDates[i]||previousDates[i]||'').slice(5)),datasets:sets.map((dates,i)=>({label:i?'对比期':'本期',data:indexes.map(n=>dates[n]?valueOf(dates[n]):null),borderColor:i?compareChartColor:currentChartColor,backgroundColor:i?compareChartColor:currentChartColor,borderDash:i?[5,5]:[],borderWidth:i?2:2.8,pointRadius:0,pointHitRadius:10,tension:.22,spanGaps:false}))},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{title:items=>items.length?'区间第 '+(items[0].dataIndex+1)+' 天':'',label:ctx=>`${ctx.dataset.label} · ${sets[ctx.datasetIndex][ctx.dataIndex]??'—'}：${dpFormat(ctx.parsed.y,kind)}`}}},scales:{x:{grid:{display:false},ticks:{color:'#7c8fa3',maxTicksLimit:5,maxRotation:0,font:{size:11}}},y:{beginAtZero:true,grid:{color:'#edf2f6'},ticks:{color:'#7c8fa3',maxTicksLimit:4,font:{size:11},callback:compact}}}}});
 }
 const DP_EXPENSE_METRICS=[
   ['onsite-spend','站内花费','adSpend','money'],
@@ -6184,7 +6185,8 @@ function dpRender() {
   dpEl('dp-status').innerHTML='';
   dpEl('dp-download-image').disabled=dpExportBusy;
   dpRenderOverview();
-  dpEl('dp-fee-kpis').innerHTML=DP_EXPENSE_METRICS.map(([,label,key,kind])=>dpMetricCard(label,total?.[key],compareTotal?.[key],kind)).join('');
+  const expenseKpis=[...DP_EXPENSE_METRICS.slice(0,2),['onsite-roi','站内 ROI','adROI','ratio'],...DP_EXPENSE_METRICS.slice(2),['offsite-roi','站外 ROI','metaROAS','ratio']];
+  dpEl('dp-fee-kpis').innerHTML=expenseKpis.map(([,label,key,kind])=>dpMetricCard(label,total?.[key],compareTotal?.[key],kind)).join('');
   dpEl('dp-store-kpis').innerHTML=[['Sales￥','gmv','money'],['订单量','orders','number'],['点击量','clicks','number'],['点击率','clickRate','percent'],['转化率','conversion','percent']].map(([label,key,kind])=>dpMetricCard(label,total?.[key],compareTotal?.[key],kind)).join('')+dpMetricCard('新买家',buyers.newBuyers,compareBuyers.newBuyers,'number');
   dpRenderCharts(current,previous,byDay,channelByDay);
   dpRenderRecent(current,byDay,channelByDay,data.shop);
