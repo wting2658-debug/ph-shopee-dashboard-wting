@@ -1462,6 +1462,14 @@ def render_html(payload: dict[str, Any]) -> str:
     th:nth-child(n+8):nth-child(-n+12) { background: rgba(39, 135, 231, 0.07); }
     th:nth-child(n+13):nth-child(-n+17) { background: rgba(238, 77, 45, 0.07); }
 
+    /* Store analysis tables include AOV before conversion. */
+    :is(#category-table, #product-table) :is(th, td):not(:first-child) { width: 5.2353%; }
+    :is(#category-table, #product-table) :is(th, td):is(:nth-child(8), :nth-child(13)) { border-left: 0; }
+    :is(#category-table, #product-table) :is(th, td):is(:nth-child(9), :nth-child(14)) { border-left: 1px dashed #9eb1c7; }
+    :is(#category-table, #product-table) th:nth-child(8) { background: rgba(246, 249, 253, 0.98); }
+    :is(#category-table, #product-table) th:nth-child(n+9):nth-child(-n+13) { background: rgba(39, 135, 231, 0.07); }
+    :is(#category-table, #product-table) th:nth-child(n+14):nth-child(-n+18) { background: rgba(238, 77, 45, 0.07); }
+
     tbody tr:hover td { background: rgba(39, 135, 231, 0.035); }
 
     .drill-row {
@@ -3345,6 +3353,7 @@ def render_html(payload: dict[str, Any]) -> str:
             <td>${renderMetricCell(current.totalSpend, current.totalSpend, compare.totalSpend, formatCurrency, { dashWhenZero: true })}</td>
             <td>${renderMetricCell(current.visitors, current.visitors, compare.visitors, formatNumber)}</td>
             <td>${renderMetricCell(current.clicks, current.clicks, compare.clicks, formatNumber)}</td>
+            <td>${renderMetricCell(current.averageOrderValue, current.averageOrderValue, compare.averageOrderValue, formatCurrency, { forceDash: current.orders === 0 })}</td>
             <td>${renderMetricCell(current.conversion, current.conversion, compare.conversion, value => formatPercent(value))}</td>
             <td>${renderMetricCell(current.adSpend, current.adSpend, compare.adSpend, formatCurrency, { dashWhenZero: true })}</td>
             <td>${renderMetricCell(current.impressions, current.impressions, compare.impressions, formatNumber, { forceDash: noAdSpend })}</td>
@@ -3387,6 +3396,7 @@ def render_html(payload: dict[str, Any]) -> str:
             ${sortableHeader('总花费', 'category', 'totalSpend')}
             ${sortableHeader('访客', 'category', 'visitors')}
             ${sortableHeader('点击', 'category', 'clicks')}
+            ${sortableHeader('客单价', 'category', 'averageOrderValue')}
             ${sortableHeader('转化率', 'category', 'conversion')}
             ${sortableHeader('站内花费', 'category', 'adSpend')}
             ${sortableHeader('站内曝光', 'category', 'impressions')}
@@ -3409,6 +3419,7 @@ def render_html(payload: dict[str, Any]) -> str:
           <td>${renderMetricCell(row.current.totalSpend, row.current.totalSpend, row.compare.totalSpend, formatCurrency, { dashWhenZero: true })}</td>
           <td>${renderMetricCell(row.current.visitors, row.current.visitors, row.compare.visitors, formatNumber)}</td>
           <td>${renderMetricCell(row.current.clicks, row.current.clicks, row.compare.clicks, formatNumber)}</td>
+          <td>${renderMetricCell(row.current.averageOrderValue, row.current.averageOrderValue, row.compare.averageOrderValue, formatCurrency, { forceDash: row.current.orders === 0 })}</td>
           <td>${renderMetricCell(row.current.conversion, row.current.conversion, row.compare.conversion, value => formatPercent(value))}</td>
           <td>${renderMetricCell(row.current.adSpend, row.current.adSpend, row.compare.adSpend, formatCurrency, { dashWhenZero: true })}</td>
           <td>${renderMetricCell(row.current.impressions, row.current.impressions, row.compare.impressions, formatNumber, { forceDash: row.current.adSpend === 0 })}</td>
@@ -3421,7 +3432,7 @@ def render_html(payload: dict[str, Any]) -> str:
           <td>${renderMetricCell(row.current.metaCTR, row.current.metaCTR, row.compare.metaCTR, value => formatPercent(value), { forceDash: row.current.metaSpend === 0 })}</td>
           <td>${renderMetricCell(row.current.metaCPM, row.current.metaCPM, row.compare.metaCPM, value => formatNumber(value, 2), { forceDash: row.current.metaSpend === 0 })}</td>
         </tr>
-      `).join('')}</tbody>` : `<tbody><tr><td class="empty" colspan="17">当前筛选下暂无小品类数据。</td></tr></tbody>`;
+      `).join('')}</tbody>` : `<tbody><tr><td class="empty" colspan="18">当前筛选下暂无小品类数据。</td></tr></tbody>`;
       document.getElementById('category-table').innerHTML = header + body + renderSummaryFooter(currentTotals, compareTotals);
     }
 
@@ -3442,6 +3453,7 @@ def render_html(payload: dict[str, Any]) -> str:
             ${sortableHeader('总花费', 'product', 'totalSpend')}
             ${sortableHeader('访客', 'product', 'visitors')}
             ${sortableHeader('点击', 'product', 'clicks')}
+            ${sortableHeader('客单价', 'product', 'averageOrderValue')}
             ${sortableHeader('转化率', 'product', 'conversion')}
             ${sortableHeader('站内花费', 'product', 'adSpend')}
             ${sortableHeader('站内曝光', 'product', 'impressions')}
@@ -3467,6 +3479,7 @@ def render_html(payload: dict[str, Any]) -> str:
             <td>${renderMetricCell(row.current.totalSpend, row.current.totalSpend, row.compare.totalSpend, formatCurrency, { dashWhenZero: true })}</td>
             <td>${renderMetricCell(row.current.visitors, row.current.visitors, row.compare.visitors, formatNumber)}</td>
             <td>${renderMetricCell(row.current.clicks, row.current.clicks, row.compare.clicks, formatNumber)}</td>
+            <td>${renderMetricCell(row.current.averageOrderValue, row.current.averageOrderValue, row.compare.averageOrderValue, formatCurrency, { forceDash: row.current.orders === 0 })}</td>
             <td>${renderMetricCell(row.current.conversion, row.current.conversion, row.compare.conversion, value => formatPercent(value))}</td>
             <td>${renderMetricCell(row.current.adSpend, row.current.adSpend, row.compare.adSpend, formatCurrency, { dashWhenZero: true })}</td>
             <td>${renderMetricCell(row.current.impressions, row.current.impressions, row.compare.impressions, formatNumber, { forceDash: row.current.adSpend === 0 })}</td>
@@ -3480,7 +3493,7 @@ def render_html(payload: dict[str, Any]) -> str:
             <td>${renderMetricCell(row.current.metaCPM, row.current.metaCPM, row.compare.metaCPM, value => formatNumber(value, 2), { forceDash: row.current.metaSpend === 0 })}</td>
           </tr>
         `;
-      }).join('')}</tbody>` : `<tbody><tr><td class="empty" colspan="17">当前筛选下暂无产品数据。</td></tr></tbody>`;
+      }).join('')}</tbody>` : `<tbody><tr><td class="empty" colspan="18">当前筛选下暂无产品数据。</td></tr></tbody>`;
       document.getElementById('product-table').innerHTML = header + body + renderSummaryFooter(currentTotals, compareTotals);
     }
 
